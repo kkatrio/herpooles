@@ -1,0 +1,25 @@
+[package]
+name = "fight-the-poo"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.84"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Window',
+  'HtmlCanvasElement',
+  'CanvasRenderingContext2d',
+  'CssStyleDeclaration',
+  'EventTarget',
+  'MouseEvent',
+]
