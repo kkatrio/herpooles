@@ -4,16 +4,29 @@
   </head>
   <body>
 
+    <canvas id="canvas"></canvas>
     <script type="module">
-      import init, { add } from './pkg/fight_the_poo.js';
+      import init, {draw, Herpooles } from './pkg/fight_the_poo.js';
+
+      // get canvas context
+      const canvas = document.getElementById("canvas");
+      canvas.width = 1000;
+      canvas.height = 1000;
+      const ctx = canvas.getContext("2d");
 
       async function run() {
-        await init();
+          await init();
 
-        const result = add(1, 2);
-        console.log(`1 + 2 = ${result}`);
-        if (result !== 3)
-          throw new Error("wasm addition doesn't work!");
+          // data
+          const herpooles = new Herpooles(500, 500);
+
+          function step() {
+              draw(ctx, herpooles);
+              console.log("step");
+              //window.requestAnimationFrame(step);
+          }
+
+          window.setInterval(step, 1000);
       }
 
       run();
