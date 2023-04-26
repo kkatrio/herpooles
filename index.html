@@ -1,35 +1,66 @@
 <html>
-  <head>
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
-  </head>
-  <body>
+    <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+    </head>
+    <body>
 
-    <canvas id="canvas"></canvas>
-    <script type="module">
-      import init, {draw, Herpooles } from './pkg/fight_the_poo.js';
+        <canvas id="canvas"></canvas>
+        <script type="module">
+            import init, {draw, Herpooles } from './pkg/fight_the_poo.js';
 
-      // get canvas context
-      const canvas = document.getElementById("canvas");
-      canvas.width = 1000;
-      canvas.height = 1000;
-      const ctx = canvas.getContext("2d");
+            // get canvas context
+            const canvas = document.getElementById("canvas");
+            canvas.width = 1000;
+            canvas.height = 800;
+            const ctx = canvas.getContext("2d");
 
-      async function run() {
-          await init();
+            async function run() {
+                await init();
 
-          // data
-          const herpooles = new Herpooles(500, 500);
+                // data
+                let herpooles = new Herpooles(500, 500);
 
-          function step() {
-              draw(ctx, herpooles);
-              console.log("step");
-              //window.requestAnimationFrame(step);
-          }
+                // keyboard events
+                let rightPressed = false;
+                let leftPressed = false;
+                let upPressed = false;
+                let downPressed = false;
+                const KeyboardHelper = { left: 37, up: 38, right: 39, down: 40 };
+                document.addEventListener("keydown", () => {
+                        rightPressed = event.keyCode === KeyboardHelper.right;
+                        leftPressed = event.keyCode === KeyboardHelper.left;
+                        upPressed = event.keyCode === KeyboardHelper.up;
+                        downPressed = event.keyCode === KeyboardHelper.down;
+                });
+                document.addEventListener("keyup", () => {
+                        rightPressed = !event.keyCode === KeyboardHelper.right;
+                        leftPressed = !event.keyCode === KeyboardHelper.left;
+                        upPressed = !event.keyCode === KeyboardHelper.up;
+                        downPressed = !event.keyCode === KeyboardHelper.down;
+                });
+                // TODO: move both direction simultaneously
 
-          window.setInterval(step, 1000);
-      }
+                // main loop
+                function step() {
+                    if (rightPressed) {
+                        herpooles.x += 20;
+                    } else if (leftPressed) {
+                        herpooles.x -= 20;
+                    }
+                    if (upPressed) {
+                        herpooles.y -= 20;
+                    } else if (downPressed) {
+                        herpooles.y += 20;
+                    }
+                    draw(ctx, herpooles);
+                    //console.log("step");
+                    //window.requestAnimationFrame(step);
+                }
+                window.setInterval(step, 100);
+                //window.requestAnimationFrame(step);
+            }
 
-      run();
-    </script>
-  </body>
+            run();
+        </script>
+    </body>
 </html>
