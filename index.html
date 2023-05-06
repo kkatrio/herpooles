@@ -6,19 +6,21 @@
 
         <canvas id="canvas"></canvas>
         <script type="module">
-            import init, {draw, Herpooles } from './pkg/fight_the_poo.js';
+            import init, {draw, Herpooles, Zombie } from './pkg/fight_the_poo.js';
 
             // get canvas context
             const canvas = document.getElementById("canvas");
             canvas.width = 1000;
             canvas.height = 800;
             const ctx = canvas.getContext("2d");
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
             async function run() {
                 await init();
 
                 // data
                 let herpooles = new Herpooles(500, 500);
+                let zombie = new Zombie(500, 100);
 
                 // keyboard events
                 let rightPressed = false;
@@ -67,11 +69,12 @@
                     } else if (downPressed) {
                         herpooles.y += 20;
                     }
-                    draw(ctx, herpooles);
+
+                    draw(ctx, herpooles, zombie);
                     //console.log("step");
                     //window.requestAnimationFrame(step);
                 }
-                window.setInterval(step, 1000);
+                window.setInterval(step, 500);
                 //window.requestAnimationFrame(step);
             }
 
