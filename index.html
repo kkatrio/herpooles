@@ -4,6 +4,7 @@
     </head>
     <body>
 
+        <button id="play-pause"></button>
         <canvas id="canvas"></canvas>
         <script type="module">
             import init, {draw, Herpooles, Zombie } from './pkg/fight_the_poo.js';
@@ -15,12 +16,13 @@
             const ctx = canvas.getContext("2d");
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
+
             async function run() {
                 await init();
 
                 // data
-                let herpooles = new Herpooles(500, 500);
-                let zombie = new Zombie(500, 100);
+                let herpooles = new Herpooles();
+                let zombie = new Zombie();
 
                 // keyboard events
                 let rightPressed = false;
@@ -57,6 +59,34 @@
                         }
                 });
 
+                // game play functions
+                let animationId = null;
+                const isPaused = () => {
+                    return animationId === null;
+                };
+                const playPauseButton = document.getElementById("play-pause");
+                playPauseButton.textContent = "⏸";
+
+                const play = () => {
+                    playPauseButton.textContent = "⏸";
+                    animationId = window.requestAnimationFrame(step);
+                };
+
+                const pause = () => {
+                    playPauseButton.textContent = "▶";
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                };
+
+                playPauseButton.addEventListener("click", event => {
+                    if (isPaused()) {
+                      play();
+                    } else {
+                      pause();
+                    }
+                });
+
+
                 // main loop
                 function step() {
                     if (rightPressed) {
@@ -69,13 +99,21 @@
                     } else if (downPressed) {
                         herpooles.y += 20;
                     }
-
-                    draw(ctx, herpooles, zombie);
                     //console.log("step");
-                    //window.requestAnimationFrame(step);
+                    draw(ctx, herpooles, zombie);
+
+                    if (herpooles.alive) {
+                        animationId = window.requestAnimationFrame(step);
+                    }
+                    else
+                    {
+                        alert("GAME OVER");
+                        document.location.reload();
+                    }
                 }
-                window.setInterval(step, 500);
-                //window.requestAnimationFrame(step);
+
+                //window.setInterval(step, 500);
+                animationId = window.requestAnimationFrame(step);
             }
 
             run();
