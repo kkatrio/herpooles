@@ -12,20 +12,9 @@
         <script type="module">
             import init, {draw, Herpooles, Zombie } from './pkg/fight_the_poo.js';
 
-            // get canvas context
-            const canvas = document.getElementById("canvas");
-            canvas.width = 1000;
-            canvas.height = 800;
-            const ctx = canvas.getContext("2d");
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
 
             async function run() {
                 await init();
-
-                // data
-                let herpooles = new Herpooles();
-                let zombie = new Zombie();
 
                 // keyboard events
                 let rightPressed = false;
@@ -96,7 +85,19 @@
                 });
 
                 // audio
+                //TODO: ask in broswer permission to allow audio.
                 const audioElement = new Audio("zombie-hit.wav");
+
+                // get canvas context
+                const canvas = document.getElementById("canvas");
+                canvas.width = 1000;
+                canvas.height = 800;
+                const ctx = canvas.getContext("2d");
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+                // data
+                let herpooles = new Herpooles();
+                let zombie = new Zombie();
 
                 // main loop
                 function step() {
