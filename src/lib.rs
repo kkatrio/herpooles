@@ -27,6 +27,7 @@ impl Herpooles {
         }
     }
 }
+
 #[wasm_bindgen]
 impl Zombie {
     #[wasm_bindgen(constructor)]
@@ -35,24 +36,41 @@ impl Zombie {
     }
 }
 
+#[derive(PartialEq)]
+enum HState {
+    Alive,
+    Dead,
+}
+
+// TODO: maybe use associated constants or constans in another mod:
+// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
+impl HState {
+    fn color(&self) -> &str {
+        match *self {
+            HState::Dead => "red",
+            HState::Alive => "green",
+        }
+    }
+}
+
 #[wasm_bindgen]
 pub fn draw(ctx: &web_sys::CanvasRenderingContext2d, h: &mut Herpooles, z: &Zombie) {
     set_panic_hook();
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
-    // is herpooles alive? => determine color
 
     // TODO: use an enum
     let herpooles_state = if is_herpooles_alive(h, z) {
-        "black"
+        HState::Alive
     } else {
-        "red"
+        HState::Dead
     };
 
-    draw_herpooles(ctx, &h, herpooles_state);
+    draw_herpooles(ctx, &h, herpooles_state.color());
     draw_zombie(ctx, z, "orange");
 
-    if herpooles_state == "red" {
-        log!("herpooles state red!");
+    // set flag to dead, so that js stops frame requests
+    if herpooles_state == HState::Dead {
+        log!("herpooles state dead!");
         h.alive = false
     }
 }
