@@ -4,7 +4,10 @@
     </head>
     <body>
 
-        <button id="play-pause"></button>
+        <div class="toolbar" style="margin-bottom: 1rem">
+          <button id="play-pause"></button>
+          <input id="restart" type="button" value="Try again" />
+        </div>
         <canvas id="canvas"></canvas>
         <script type="module">
             import init, {draw, Herpooles, Zombie } from './pkg/fight_the_poo.js';
@@ -65,15 +68,15 @@
                     return animationId === null;
                 };
                 const playPauseButton = document.getElementById("play-pause");
-                playPauseButton.textContent = "⏸";
+                playPauseButton.textContent = "Pause";
 
                 const play = () => {
-                    playPauseButton.textContent = "⏸";
+                    playPauseButton.textContent = "Pause";
                     animationId = window.requestAnimationFrame(step);
                 };
 
                 const pause = () => {
-                    playPauseButton.textContent = "▶";
+                    playPauseButton.textContent = "Play";
                     cancelAnimationFrame(animationId);
                     animationId = null;
                 };
@@ -86,18 +89,26 @@
                     }
                 });
 
+                // restart
+                const restartButton = document.getElementById("restart");
+                restartButton.addEventListener("click", event => {
+                    document.location.reload();
+                });
+
+                // audio
+                const audioElement = new Audio("zombie-hit.wav");
 
                 // main loop
                 function step() {
                     if (rightPressed) {
-                        herpooles.x += 20;
+                        herpooles.x += 10;
                     } else if (leftPressed) {
-                        herpooles.x -= 20;
+                        herpooles.x -= 10;
                     }
                     if (upPressed) {
-                        herpooles.y -= 20;
+                        herpooles.y -= 10;
                     } else if (downPressed) {
-                        herpooles.y += 20;
+                        herpooles.y += 10;
                     }
                     //console.log("step");
                     draw(ctx, herpooles, zombie);
@@ -107,8 +118,8 @@
                     }
                     else
                     {
-                        alert("GAME OVER");
-                        document.location.reload();
+                        //cancelAnimationFrame(animationId); // is it needed?
+                        audioElement.play();
                     }
                 }
 
