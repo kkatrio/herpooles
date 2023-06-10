@@ -1,10 +1,10 @@
 [package]
-name = "fight-the-poo"
+name = "herpooles"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [features]
 default = ["console_error_panic_hook"]
@@ -12,6 +12,7 @@ default = ["console_error_panic_hook"]
 [dependencies]
 wasm-bindgen = "0.2.84"
 console_error_panic_hook = { version = "0.1.7", optional = true }
+approx = "0.5.1"
 
 [dependencies.web-sys]
 version = "0.3.4"
