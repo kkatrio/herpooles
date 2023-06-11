@@ -80,7 +80,7 @@ pub fn draw(ctx: &web_sys::CanvasRenderingContext2d, h: &mut Herpooles, z: &mut 
 
 fn draw_herpooles(ctx: &web_sys::CanvasRenderingContext2d, h: &Herpooles, c: &str) {
     ctx.set_fill_style(&JsValue::from_str(c));
-    ctx.fill_rect(h.x.into(), h.y.into(), 20.0, 20.0);
+    ctx.fill_rect(h.x.into(), h.y.into(), 20.0, 20.0); //TODO: paameterize size
 }
 
 fn draw_zombie(ctx: &web_sys::CanvasRenderingContext2d, h: &Zombie, c: &str) {
@@ -101,7 +101,7 @@ fn move_zombies(z: &mut Zombie, h: &Herpooles) {
     let zh_vec = geometry::Vector::new(zp, hp);
 
     // apply A + d n
-    let zombie_speed = 2.5;
+    let zombie_speed = 0.5;
     let mv_vec: geometry::Vector = zh_vec.unit_vec() * zombie_speed;
     let pos: geometry::Point = zp + mv_vec;
 
