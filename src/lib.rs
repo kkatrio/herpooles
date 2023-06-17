@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 mod utils;
 use utils::set_panic_hook;
 pub mod geometry;
+mod render;
 
 #[wasm_bindgen]
 pub struct Herpooles {
@@ -65,27 +66,17 @@ pub fn draw(ctx: &web_sys::CanvasRenderingContext2d, h: &mut Herpooles, z: &mut 
     } else {
         HState::Dead
     };
-    draw_herpooles(ctx, &h, herpooles_state.color());
+    render::draw_herpooles(ctx, &h, herpooles_state.color());
 
     // zombies
     move_zombies(z, h);
-    draw_zombie(ctx, &z, "orange");
+    render::draw_zombie(ctx, &z, "grey");
 
     // set flag to dead, so that js stops frame requests
     if herpooles_state == HState::Dead {
         log!("herpooles state dead!");
         h.alive = false
     }
-}
-
-fn draw_herpooles(ctx: &web_sys::CanvasRenderingContext2d, h: &Herpooles, c: &str) {
-    ctx.set_fill_style(&JsValue::from_str(c));
-    ctx.fill_rect(h.x.into(), h.y.into(), 20.0, 20.0); //TODO: paameterize size
-}
-
-fn draw_zombie(ctx: &web_sys::CanvasRenderingContext2d, h: &Zombie, c: &str) {
-    ctx.set_fill_style(&JsValue::from_str(c));
-    ctx.fill_rect(h.x.into(), h.y.into(), 20.0, 20.0);
 }
 
 fn is_herpooles_alive(h: &Herpooles, z: &Zombie) -> bool {
