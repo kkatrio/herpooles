@@ -100,11 +100,11 @@
                 let zombie = new Zombie();
 
                 // canvas boundaries
-                const margin = 1;
-                const rwall = canvas.width - margin - 20; // 20 is the hardcoded rectangle size
+                const margin = 20; // 20 is the hardcoded rectangle size
+                const rwall = canvas.width - margin;
                 const lwall = margin;
-                const upwall = canvas.height - margin - 20;
-                const downwall = margin;
+                const bottomwall = canvas.height - 2 * margin; // extra margin depends on the rectangle size
+                const topwall = margin;
 
                 // main game loop
                 function step() {
@@ -113,9 +113,9 @@
                     } else if (leftPressed && herpooles.x > lwall) {
                         herpooles.x -= 10;
                     }
-                    if (upPressed && herpooles.y > downwall) {
+                    if (upPressed && herpooles.y > topwall) {
                         herpooles.y -= 10;
-                    } else if (downPressed && herpooles.y < upwall) {
+                    } else if (downPressed && herpooles.y < bottomwall) {
                         herpooles.y += 10;
                     }
                     //console.log("step");
