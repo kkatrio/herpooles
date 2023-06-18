@@ -67,6 +67,7 @@ pub fn draw(ctx: &web_sys::CanvasRenderingContext2d, h: &mut Herpooles, z: &mut 
         HState::Dead
     };
     render::draw_herpooles(ctx, &h, herpooles_state.color());
+    render::draw_poo(ctx, &h);
 
     // zombies
     move_zombies(z, h);
@@ -102,6 +103,5 @@ fn move_zombies(z: &mut Zombie, h: &Herpooles) {
 
 #[wasm_bindgen(start)]
 fn main() -> Result<(), JsValue> {
-    //TODO: does not do anything. Should it?
     Ok(())
 }

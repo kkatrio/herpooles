@@ -10,7 +10,7 @@ crate-type = ["cdylib", "lib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2.84"
+wasm-bindgen = "0.2.87"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 approx = "0.5.1"
 
@@ -28,4 +28,5 @@ features = [
   'EventTarget',
   'MouseEvent',
   'console',
+  'Path2d'
 ]
