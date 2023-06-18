@@ -43,28 +43,32 @@ pub fn draw_herpooles(ctx: &web_sys::CanvasRenderingContext2d, h: &Herpooles, c:
     ctx.begin_path();
 
     // Draw the head
-    ctx.arc(
-        start_x,
-        start_y,
-        head_radius,
-        0.0,
-        std::f64::consts::PI * 2.0,
-    )
-    .unwrap();
+    ctx.move_to(start_x, start_y + head_radius);
+    ctx.line_to(start_x - head_radius, start_y + head_radius / 2.0);
+    ctx.line_to(start_x - head_radius, start_y - head_radius);
+    ctx.line_to(start_x + head_radius, start_y - head_radius);
+    ctx.line_to(start_x + head_radius, start_y + head_radius / 2.0);
+    ctx.line_to(start_x, start_y + head_radius);
 
     // Draw the body
     ctx.move_to(start_x, start_y + head_radius);
     ctx.line_to(start_x, start_y + head_radius + body_height);
 
     // Draw the legs
-    ctx.move_to(start_x, start_y + head_radius + body_height);
+    ctx.move_to(
+        start_x - arm_width / 4.0,
+        start_y + head_radius + body_height,
+    );
     ctx.line_to(
-        start_x - arm_width / 2.0,
+        start_x - arm_width / 4.0,
         start_y + head_radius + body_height + leg_height,
     );
-    ctx.move_to(start_x, start_y + head_radius + body_height);
+    ctx.move_to(
+        start_x + arm_width / 4.0,
+        start_y + head_radius + body_height,
+    );
     ctx.line_to(
-        start_x + arm_width / 2.0,
+        start_x + arm_width / 4.0,
         start_y + head_radius + body_height + leg_height,
     );
 
@@ -103,7 +107,7 @@ pub fn draw_herpooles(ctx: &web_sys::CanvasRenderingContext2d, h: &Herpooles, c:
     // Draw the crown
     ctx.begin_path();
     ctx.set_fill_style(&JsValue::from_str("brown"));
-    let crown_height = 5.0 * SCALE;
+    let crown_height = 1.0 * SCALE;
     let crown_width = 50.0 * SCALE;
     let half_base = crown_width / 6.0;
     let crown_bottom = start_y - head_radius - crown_height;
