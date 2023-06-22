@@ -10,7 +10,7 @@
         </div>
         <canvas id="canvas"></canvas>
         <script type="module">
-            import init, {draw, Herpooles, Zombie } from './pkg/herpooles.js';
+            import init, {draw, Herpooles, Zombie, Poo} from './pkg/herpooles.js';
 
             async function run() {
                 await init();
@@ -97,6 +97,7 @@
                 // data
                 let herpooles = new Herpooles();
                 let zombie = new Zombie();
+                let poo = new Poo();
 
                 // canvas boundaries
                 const margin = 20; // 20 is the hardcoded rectangle size
@@ -118,7 +119,7 @@
                         herpooles.y += 10;
                     }
                     //console.log("step");
-                    draw(ctx, herpooles, zombie);
+                    draw(ctx, herpooles, zombie, poo);
 
                     if (herpooles.alive) {
                         animationId = window.requestAnimationFrame(step);

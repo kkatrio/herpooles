@@ -44,6 +44,34 @@ enum HState {
     Dead,
 }
 
+#[wasm_bindgen]
+pub struct Poo {
+    pub x: f32,
+    pub y: f32,
+    pub direction: Direction,
+}
+
+#[wasm_bindgen]
+impl Poo {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Poo {
+        Poo {
+            x: 100.0,
+            y: 100.0,
+            direction: Direction::South,
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Copy, Clone, Debug)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
 // TODO: maybe use associated constants or constans in another mod:
 // https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
 impl HState {
@@ -56,7 +84,12 @@ impl HState {
 }
 
 #[wasm_bindgen]
-pub fn draw(ctx: &web_sys::CanvasRenderingContext2d, h: &mut Herpooles, z: &mut Zombie) {
+pub fn draw(
+    ctx: &web_sys::CanvasRenderingContext2d,
+    h: &mut Herpooles,
+    z: &mut Zombie,
+    p: &mut Poo,
+) {
     set_panic_hook();
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
@@ -67,7 +100,10 @@ pub fn draw(ctx: &web_sys::CanvasRenderingContext2d, h: &mut Herpooles, z: &mut 
         HState::Dead
     };
     render::draw_herpooles(ctx, &h, herpooles_state.color());
-    render::draw_poo(ctx, &h);
+
+    // poo
+    move_poo(p);
+    render::draw_poo(ctx, p);
 
     // zombies
     move_zombies(z, h);
@@ -99,6 +135,29 @@ fn move_zombies(z: &mut Zombie, h: &Herpooles) {
 
     z.x = pos.x;
     z.y = pos.y;
+}
+
+fn move_poo(p: &mut Poo) {
+    // find unit vector of orbit
+    // TODO maybe store the unit vector in the poo instead of the direction.
+    let (p_next_x, p_next_y) = match p.direction {
+        Direction::North => (p.x, p.y - 1.0),
+        Direction::East => (p.x + 1.0, p.y),
+        Direction::South => (p.x, p.y + 1.0),
+        Direction::West => (p.x - 1.0, p.y),
+    };
+    let direction_vec = geometry::Vector::new(
+        geometry::Point { x: p.x, y: p.y },
+        geometry::Point {
+            x: p_next_x,
+            y: p_next_y,
+        },
+    );
+    let poo_speed = 0.5;
+    let mv_vec = direction_vec.unit_vec() * poo_speed;
+    p.x = p.x + mv_vec.x;
+    p.y = p.y + mv_vec.y;
+    log!("px: {} py: {}", p.x, p.y);
 }
 
 #[wasm_bindgen(start)]

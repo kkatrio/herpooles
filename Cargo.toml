@@ -28,5 +28,5 @@ features = [
   'EventTarget',
   'MouseEvent',
   'console',
-  'Path2d'
+  'HtmlImageElement',
 ]
