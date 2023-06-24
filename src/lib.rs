@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use wasm_bindgen::prelude::*;
 #[macro_use]
 mod utils;
@@ -157,10 +159,30 @@ fn move_poo(p: &mut Poo) {
     let mv_vec = direction_vec.unit_vec() * poo_speed;
     p.x = p.x + mv_vec.x;
     p.y = p.y + mv_vec.y;
-    log!("px: {} py: {}", p.x, p.y);
+}
+
+fn handle_event(event: web_sys::EventTarget) {
+    let type_id = event.type_id();
+    log!("type_id: {:?}", type_id);
 }
 
 #[wasm_bindgen(start)]
 fn main() -> Result<(), JsValue> {
+    let document = web_sys::window()
+        .expect("can't get window")
+        .document()
+        .expect("can't get document");
+    let event_target = document.dyn_into::<web_sys::EventTarget>().unwrap();
+
+    let closure = Closure::wrap(Box::new(handle_event) as Box<dyn FnMut(_)>);
+    event_target
+        .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())
+        .unwrap();
+    closure.forget();
+
+    // create data here they will live in JS
+
+    let poo = Poo::new();
+    // use them in handles, use them form JS
     Ok(())
 }

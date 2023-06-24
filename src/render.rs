@@ -292,6 +292,7 @@ pub fn draw_poo(ctx: &web_sys::CanvasRenderingContext2d, p: &Poo) {
     //ctx.set_fill_style(&JsValue::from_str("brown"));
     //ctx.fill_with_path_2d(&path2d);
 
+    // TODO: load the image once in main
     let document = web_sys::window().unwrap().document().unwrap();
     let image_element = document
         .create_element("img")
