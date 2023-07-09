@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 #[macro_use]
 mod utils;
 use utils::set_panic_hook;
+mod callbacks;
 pub mod geometry;
 mod render;
 
@@ -24,7 +25,7 @@ pub struct Zombie {
 
 #[wasm_bindgen]
 impl Herpooles {
-    #[wasm_bindgen(constructor)] // TODO: why is this needed
+    #[wasm_bindgen(constructor)] // why is this needed
     pub fn new() -> Herpooles {
         Herpooles {
             x: 500.0,
@@ -46,6 +47,17 @@ impl Zombie {
 enum HState {
     Alive,
     Dead,
+}
+
+// TODO: maybe use associated constants or constans in another mod:
+// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
+impl HState {
+    fn color(&self) -> &str {
+        match *self {
+            HState::Dead => "red",
+            HState::Alive => "green",
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -76,15 +88,12 @@ pub enum Direction {
     West,
 }
 
-// TODO: maybe use associated constants or constans in another mod:
-// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
-impl HState {
-    fn color(&self) -> &str {
-        match *self {
-            HState::Dead => "red",
-            HState::Alive => "green",
-        }
-    }
+#[derive(Default, Copy, Clone)]
+pub struct PressedKeys {
+    right: bool,
+    left: bool,
+    up: bool,
+    down: bool,
 }
 
 #[wasm_bindgen]
@@ -163,74 +172,16 @@ fn move_poo(p: &mut Poo) {
     p.y = p.y + mv_vec.y;
 }
 
-enum KeyboardCodes {
-    Left = 37,
-    Up = 38,
-    Right = 39,
-    Down = 40,
-}
-
-#[derive(Default, Copy, Clone)]
-pub struct PressedKeys {
-    right: bool,
-    left: bool,
-    up: bool,
-    down: bool,
-}
-
-//TODO: use RefCell and borrow?
-pub fn handle_keydown_event(event: web_sys::KeyboardEvent, pressed: &Rc<Cell<PressedKeys>>) {
-    if event.key_code() == KeyboardCodes::Left as u32 {
-        let mut keys = pressed.take();
-        keys.left = true;
-        pressed.set(keys);
-    } else if event.key_code() == KeyboardCodes::Right as u32 {
-        let mut keys = pressed.take();
-        keys.right = true;
-        pressed.set(keys);
-    } else if event.key_code() == KeyboardCodes::Up as u32 {
-        let mut keys = pressed.take();
-        keys.up = true;
-        pressed.set(keys);
-    } else if event.key_code() == KeyboardCodes::Down as u32 {
-        let mut keys = pressed.take();
-        keys.down = true;
-        pressed.set(keys);
-    }
-}
-
-fn handle_keyup_event(event: web_sys::KeyboardEvent, pressed: &Rc<Cell<PressedKeys>>) {
-    if event.key_code() == KeyboardCodes::Left as u32 {
-        let mut keys = pressed.take();
-        keys.left = false;
-        pressed.set(keys);
-    } else if event.key_code() == KeyboardCodes::Right as u32 {
-        let mut keys = pressed.take();
-        keys.right = false;
-        pressed.set(keys);
-    } else if event.key_code() == KeyboardCodes::Up as u32 {
-        let mut keys = pressed.take();
-        keys.up = false;
-        pressed.set(keys);
-    } else if event.key_code() == KeyboardCodes::Down as u32 {
-        let mut keys = pressed.take();
-        keys.down = false;
-        pressed.set(keys);
-    }
-}
-
 fn window() -> web_sys::Window {
     web_sys::window().expect("no global `window` exists")
 }
-
 // window.request_anination_frame -> Result<i32, JsValue>
-fn request_animation_frame(f: &Closure<dyn FnMut()>) -> i32 {
+pub fn request_animation_frame(f: &Closure<dyn FnMut()>) -> i32 {
     window()
         .request_animation_frame(f.as_ref().unchecked_ref())
         .expect("should register `requestAnimationFrame` OK")
 }
-
-fn cancel_animation_frame(handle: i32) {
+pub fn cancel_animation_frame(handle: i32) {
     window()
         .cancel_animation_frame(handle)
         .expect("should register `cancelAnimationFrame` OK");
@@ -270,24 +221,7 @@ fn main() -> Result<(), JsValue> {
         down: false,
     };
     let pressed_keys = Rc::new(Cell::new(pressed_keys));
-    // keydown
-    let pressed_down_keys = pressed_keys.clone();
-    let keydown_closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
-        handle_keydown_event(event, &pressed_down_keys)
-    }) as Box<dyn FnMut(_)>);
-    document
-        .add_event_listener_with_callback("keydown", keydown_closure.as_ref().unchecked_ref())
-        .unwrap();
-    keydown_closure.forget();
-    // keyup
-    let pressed_up_keys = pressed_keys.clone();
-    let keyup_closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
-        handle_keyup_event(event, &pressed_up_keys)
-    }) as Box<dyn FnMut(_)>);
-    document
-        .add_event_listener_with_callback("keyup", keyup_closure.as_ref().unchecked_ref())
-        .unwrap();
-    keyup_closure.forget();
+    callbacks::add_key_events(&pressed_keys, &document);
 
     // data
     let mut poo = Poo::new();
@@ -324,7 +258,7 @@ fn main() -> Result<(), JsValue> {
         }
 
         if herpooles.alive {
-            let id = request_animation_frame(g.borrow_mut().as_ref().unwrap());
+            let id = request_animation_frame(g.borrow_mut().as_ref().unwrap()); // why mut borrow
             closed_animation_id.set(id);
         } else {
             let _promise = audio.play().unwrap();
@@ -335,8 +269,7 @@ fn main() -> Result<(), JsValue> {
     // request the first frame
     animation_id.set(request_animation_frame(f.borrow().as_ref().unwrap()));
 
-    // play-pause callback
-    // TODO: move to a seperate function
+    // play-pause callback -- keep it here for now
     // we want to call the main_loop_closure callback from the play_pause_closure, so we create another Rc
     let p = f.clone();
     // we use the animation_id in this closure, so create another clone for play-pause event
@@ -366,15 +299,7 @@ fn main() -> Result<(), JsValue> {
         .unwrap();
     play_pause_closure.forget();
 
-    // try again callback
-    let location = document.location().unwrap();
-    let restart_closure =
-        Closure::wrap(Box::new(move || location.reload().unwrap()) as Box<dyn Fn()>);
-    let restart_button = document.get_element_by_id("restart").unwrap();
-    restart_button
-        .add_event_listener_with_callback("click", restart_closure.as_ref().unchecked_ref())
-        .unwrap();
-    restart_closure.forget();
+    callbacks::add_restart_event(&document);
 
     Ok(())
 }
