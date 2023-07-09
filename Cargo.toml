@@ -29,4 +29,8 @@ features = [
   'MouseEvent',
   'console',
   'HtmlImageElement',
+  'KeyboardEvent',
+  'Location',
+  'HtmlInputElement',
+  'HtmlAudioElement',
 ]

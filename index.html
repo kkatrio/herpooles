@@ -5,134 +5,15 @@
     <body>
 
         <div class="toolbar" style="margin-bottom: 1rem">
-          <button id="play-pause"></button>
+          <input id="play-pause" type="button" value="Pause" />
           <input id="restart" type="button" value="Try again" />
         </div>
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas" width="1000" height="800"></canvas>
         <script type="module">
-            import init, {draw, Herpooles, Zombie, Poo} from './pkg/herpooles.js';
+            import init from './pkg/herpooles.js';
 
             async function run() {
                 await init();
-
-                // keyboard events
-                let rightPressed = false;
-                let leftPressed = false;
-                let upPressed = false;
-                let downPressed = false;
-                const KeyboardHelper = { left: 37, up: 38, right: 39, down: 40, space: 32 };
-                document.addEventListener("keydown", () => {
-                        if (event.keyCode === KeyboardHelper.right) {
-                            rightPressed = true
-                        }
-                        if (event.keyCode === KeyboardHelper.left) {
-                            leftPressed = true
-                        }
-                        if (event.keyCode === KeyboardHelper.up) {
-                            upPressed = true
-                        }
-                        if (event.keyCode === KeyboardHelper.down) {
-                            downPressed = true
-                        }
-                });
-                document.addEventListener("keyup", () => {
-                        if (event.keyCode === KeyboardHelper.right) {
-                            rightPressed = false
-                        }
-                        if (event.keyCode === KeyboardHelper.left) {
-                            leftPressed = false
-                        }
-                        if (event.keyCode === KeyboardHelper.up) {
-                            upPressed = false
-                        }
-                        if (event.keyCode === KeyboardHelper.down) {
-                            downPressed = false
-                        }
-                });
-
-                // game play functions
-                let animationId = null;
-                const isPaused = () => {
-                    return animationId === null;
-                };
-                const playPauseButton = document.getElementById("play-pause");
-                playPauseButton.textContent = "Pause";
-
-                const play = () => {
-                    playPauseButton.textContent = "Pause";
-                    animationId = window.requestAnimationFrame(step);
-                };
-
-                const pause = () => {
-                    playPauseButton.textContent = "Play";
-                    cancelAnimationFrame(animationId);
-                    animationId = null;
-                };
-
-                playPauseButton.addEventListener("click", event => {
-                    if (isPaused()) {
-                      play();
-                    } else {
-                      pause();
-                    }
-                });
-
-                // restart
-                const restartButton = document.getElementById("restart");
-                restartButton.addEventListener("click", event => {
-                    document.location.reload();
-                });
-
-                // audio
-                //TODO: ask in broswer permission to allow audio.
-                const audioElement = new Audio("zombie-hit.wav");
-
-                // get canvas context
-                const canvas = document.getElementById("canvas");
-                canvas.width = 1000;
-                canvas.height = 800;
-                const ctx = canvas.getContext("2d");
-                ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-                // data
-                let herpooles = new Herpooles();
-                let zombie = new Zombie();
-                let poo = new Poo();
-
-                // canvas boundaries
-                const margin = 20; // 20 is the hardcoded rectangle size
-                const rwall = canvas.width - margin;
-                const lwall = margin;
-                const bottomwall = canvas.height - 2 * margin; // extra margin depends on the rectangle size
-                const topwall = margin;
-
-                // main game loop
-                function step() {
-                    if (rightPressed && herpooles.x < rwall) {
-                        herpooles.x += 10;
-                    } else if (leftPressed && herpooles.x > lwall) {
-                        herpooles.x -= 10;
-                    }
-                    if (upPressed && herpooles.y > topwall) {
-                        herpooles.y -= 10;
-                    } else if (downPressed && herpooles.y < bottomwall) {
-                        herpooles.y += 10;
-                    }
-                    //console.log("step");
-                    draw(ctx, herpooles, zombie, poo);
-
-                    if (herpooles.alive) {
-                        animationId = window.requestAnimationFrame(step);
-                    }
-                    else
-                    {
-                        //cancelAnimationFrame(animationId); // is it needed?
-                        audioElement.play();
-                    }
-                }
-
-                //window.setInterval(step, 500);
-                animationId = window.requestAnimationFrame(step);
             }
 
             run();
