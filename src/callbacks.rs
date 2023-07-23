@@ -1,13 +1,16 @@
+use crate::game::Herpooles;
 use crate::PressedKeys;
 use std::cell::Cell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
+// TODO: Deprecated, use codes
 enum KeyboardCodes {
     Left = 37,
     Up = 38,
     Right = 39,
     Down = 40,
+    Spacebar = 32,
 }
 
 //TODO: use RefCell and borrow?
@@ -73,7 +76,6 @@ pub fn add_key_events(pressed_keys: &Rc<Cell<PressedKeys>>, document: &web_sys::
 }
 
 pub fn add_restart_event(document: &web_sys::Document) {
-    // try again callback
     let location = document.location().unwrap();
     let restart_closure =
         Closure::wrap(Box::new(move || location.reload().unwrap()) as Box<dyn Fn()>);
@@ -82,4 +84,16 @@ pub fn add_restart_event(document: &web_sys::Document) {
         .add_event_listener_with_callback("click", restart_closure.as_ref().unchecked_ref())
         .unwrap();
     restart_closure.forget();
+}
+
+pub fn add_shoot(herpooles: &Rc<Cell<Herpooles>>, document: &web_sys::Document) {
+    let shoot_closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
+        if event.key_code() == KeyboardCodes::Spacebar as u32 {
+            //herpooles.fire_poo();
+        }
+    }) as Box<dyn FnMut(_)>);
+    document
+        .add_event_listener_with_callback("keydown", shoot_closure.as_ref().unchecked_ref())
+        .unwrap();
+    shoot_closure.forget();
 }

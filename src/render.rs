@@ -1,9 +1,10 @@
 use wasm_bindgen::prelude::*;
 
-use crate::Herpooles;
-use crate::Poo;
-use crate::Zombie;
+use crate::game::Herpooles;
+use crate::game::Poo;
+use crate::game::Zombie;
 
+// TODO: draw once or load a png once
 pub fn draw_herpooles(ctx: &web_sys::CanvasRenderingContext2d, h: &Herpooles, c: &str) {
     ctx.set_stroke_style(&JsValue::from_str(c));
     let hx: f64 = h.x.into();
