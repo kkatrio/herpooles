@@ -86,14 +86,14 @@ fn main() -> Result<(), JsValue> {
     //let herpooles = Rc::new(Cell::new(herpooles));
     //let closed_herpooles = herpooles.clone();
 
-    // game over sound
+    // game-over sound
     let audio =
         web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav").expect("Could not load wav");
 
     // main game loop
-    // animation_id is used in the first frame request only.
+    // animation_id is used in the first frame request.
     let animation_id = Rc::new(Cell::new(0));
-    // used in the main_loop_closure
+    // moved in the main_loop_closure
     let closed_animation_id = animation_id.clone();
     // create two Rc
     let f = Rc::new(RefCell::new(None));
@@ -127,36 +127,11 @@ fn main() -> Result<(), JsValue> {
     // request the first frame
     animation_id.set(request_animation_frame(f.borrow().as_ref().unwrap()));
 
-    // play-pause callback -- keep it here for now
-    // we want to call the main_loop_closure callback from the play_pause_closure, so we create another Rc
+    // we want to call the main_loop closure from the play_pause losure, so we create another clone of the main_loop_closure Rc.
+    // Same for the animation_id.
     let p = f.clone();
-    // we use the animation_id in this closure, so create another clone for play-pause event
     let pp_animation_id = animation_id.clone();
-    // get_element_by_id returns an Element, not a &Element
-    // we clone it once before the closure, but we clone it again in the closure?
-    let play_pause_button = document.get_element_by_id("play-pause").unwrap();
-    // wee need to move a clone in the closure
-    let pp_button = play_pause_button.clone();
-    let play_pause_closure = Closure::wrap(Box::new(move || {
-        // needed to set the value of the input button
-        let html_input_button = pp_button
-            .clone() // why ownership is not tranfered in the closure? It is not used again outside.
-            .dyn_into::<web_sys::HtmlInputElement>()
-            .unwrap();
-        if pp_animation_id.get() == 0 {
-            pp_animation_id.set(request_animation_frame(p.borrow().as_ref().unwrap()));
-            html_input_button.set_value("Pause");
-        } else {
-            cancel_animation_frame(animation_id.get());
-            pp_animation_id.set(0);
-            html_input_button.set_value("Start"); // fix this
-        }
-    }) as Box<dyn Fn()>); // no FnMut needed
-    play_pause_button
-        .add_event_listener_with_callback("click", play_pause_closure.as_ref().unchecked_ref())
-        .unwrap();
-    play_pause_closure.forget();
-
+    callbacks::add_play_pause_control(pp_animation_id, p, &document);
     callbacks::add_restart_event(&document);
     //callbacks::add_shoot(&herpooles, &document);
 

@@ -1,6 +1,8 @@
 use crate::game::Herpooles;
 use crate::PressedKeys;
+use crate::{cancel_animation_frame, request_animation_frame};
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -84,6 +86,35 @@ pub fn add_restart_event(document: &web_sys::Document) {
         .add_event_listener_with_callback("click", restart_closure.as_ref().unchecked_ref())
         .unwrap();
     restart_closure.forget();
+}
+
+pub fn add_play_pause_control(
+    anim_id: Rc<Cell<i32>>,
+    p: Rc<RefCell<Option<Closure<dyn FnMut()>>>>,
+    document: &web_sys::Document,
+) {
+    // get_element_by_id returns an Element which is not Copy
+    let play_pause_button = document.get_element_by_id("play-pause").unwrap();
+    let pp_button = play_pause_button.clone();
+
+    let play_pause_closure = Closure::wrap(Box::new(move || {
+        let html_input_button = pp_button
+            .clone() // Because closure is Fn, not FnOnce
+            .dyn_into::<web_sys::HtmlInputElement>()
+            .unwrap();
+        if anim_id.get() == 0 {
+            anim_id.set(request_animation_frame(p.borrow().as_ref().unwrap()));
+            html_input_button.set_value("Pause");
+        } else {
+            cancel_animation_frame(anim_id.get());
+            anim_id.set(0);
+            html_input_button.set_value("Start");
+        }
+    }) as Box<dyn Fn()>); // no FnMut needed
+    play_pause_button
+        .add_event_listener_with_callback("click", play_pause_closure.as_ref().unchecked_ref())
+        .unwrap();
+    play_pause_closure.forget();
 }
 
 pub fn add_shoot(herpooles: &Rc<Cell<Herpooles>>, document: &web_sys::Document) {
