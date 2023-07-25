@@ -117,7 +117,7 @@ pub fn add_play_pause_control(
     play_pause_closure.forget();
 }
 
-pub fn add_shoot(herpooles: Rc<Cell<Herpooles>>, document: &web_sys::Document) {
+pub fn add_shoot(herpooles: Rc<RefCell<Herpooles>>, document: &web_sys::Document) {
     // need to clone herpooles
     let shoot_closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
         if event.key_code() == KeyboardCodes::Spacebar as u32 {

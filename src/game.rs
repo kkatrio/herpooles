@@ -2,9 +2,10 @@ use crate::geometry;
 use crate::render;
 use crate::PressedKeys;
 use std::cell::Cell;
+use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Clone)]
 pub struct Herpooles {
     pub x: f32,
     pub y: f32,
@@ -120,7 +121,7 @@ fn move_poo(p: &mut Poo) {
 // h is a Rc clone
 pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
-    h: &Rc<Cell<Herpooles>>,
+    h: &Rc<RefCell<Herpooles>>,
     z: &mut Zombie,
     p: &mut Poo,
     pressed_keys: &Rc<Cell<PressedKeys>>,
@@ -128,10 +129,10 @@ pub fn step(
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
     // herpooles
-    let mut hcv = h.get();
+    let mut hcv = h.borrow_mut();
     let pressed_keys = pressed_keys.get();
     move_herpooles(&mut hcv, &pressed_keys);
-    h.set(hcv); // set the value back to the cell, so that it is updated for the next step
+    //h.set(hcv); // set the value back to the cell, so that it is updated for the next step
     let herpooles_state = if is_herpooles_alive(&hcv, z) {
         HState::Alive
     } else {
@@ -139,9 +140,9 @@ pub fn step(
     };
     if herpooles_state == HState::Dead {
         log!("herpooles state dead!");
-        let mut in_h = h.take();
-        in_h.alive = false;
-        h.set(in_h);
+        //let mut in_h = h.take();
+        hcv.alive = false;
+        //h.set(in_h);
     }
     render::draw_herpooles(ctx, &hcv, herpooles_state.color());
 

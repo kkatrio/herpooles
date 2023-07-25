@@ -85,7 +85,7 @@ fn main() -> Result<(), JsValue> {
     // needs interior mutability because it may move (change coordinates) and also fire poo (push
     // poo in its vec). Also it probably needs to be thread safe.
     let herpooles = game::Herpooles::new();
-    let herpooles = Rc::new(Cell::new(herpooles));
+    let herpooles = Rc::new(RefCell::new(herpooles));
     // moved in the main_loop_closure
     let closed_herpooles = herpooles.clone();
 
@@ -107,7 +107,7 @@ fn main() -> Result<(), JsValue> {
             &pressed_keys,
         );
 
-        if closed_herpooles.get().alive {
+        if closed_herpooles.borrow().alive {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
             closed_animation_id.set(id);
         } else {
