@@ -6,6 +6,7 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
+#[derive(Default, Copy, Clone)]
 pub struct Herpooles {
     pub x: f32,
     pub y: f32,
@@ -127,11 +128,10 @@ fn move_poo(p: &mut Poo) {
     p.y = p.y + mv_vec.y;
 }
 
-// TODO: draw not mutable data, move them in a seperate function
-#[wasm_bindgen]
-pub fn draw(
+// h is a Rc clone
+pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
-    h: &mut Herpooles,
+    h: &Rc<Cell<Herpooles>>,
     z: &mut Zombie,
     p: &mut Poo,
 ) {
@@ -139,39 +139,43 @@ pub fn draw(
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
     // herpooles
-    let herpooles_state = if is_herpooles_alive(h, z) {
+    let h_ref = h.get(); // pass the reference in the fucntions below
+
+    let herpooles_state = if is_herpooles_alive(&h_ref, z) {
         HState::Alive
     } else {
         HState::Dead
     };
-    render::draw_herpooles(ctx, &h, herpooles_state.color());
+    render::draw_herpooles(ctx, &h_ref, herpooles_state.color());
 
     // poo
     move_poo(p);
     render::draw_poo(ctx, p);
 
     // zombies
-    move_zombies(z, h);
+    move_zombies(z, &h_ref);
     render::draw_zombie(ctx, &z, "grey");
 
     // set flag to dead, so that js stops frame requests
     if herpooles_state == HState::Dead {
         log!("herpooles state dead!");
-        h.alive = false
+        let mut in_h = h.take();
+        in_h.alive = false;
+        h.set(in_h);
     }
 }
 
-pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &Rc<Cell<PressedKeys>>) {
-    if pressed_keys.get().right && herpooles.x < 1000.0 {
-        herpooles.x += 10.0;
+pub fn move_herpooles(herpooles: &Rc<Cell<Herpooles>>, pressed_keys: &Rc<Cell<PressedKeys>>) {
+    if pressed_keys.get().right && herpooles.get().x < 1000.0 {
+        herpooles.get().x += 10.0;
     }
-    if pressed_keys.get().left && herpooles.x > 0.0 {
-        herpooles.x -= 10.0;
+    if pressed_keys.get().left && herpooles.get().x > 0.0 {
+        herpooles.get().x -= 10.0;
     }
-    if pressed_keys.get().up && herpooles.y > 0.0 {
-        herpooles.y -= 10.0;
+    if pressed_keys.get().up && herpooles.get().y > 0.0 {
+        herpooles.get().y -= 10.0;
     }
-    if pressed_keys.get().down && herpooles.y < 800.0 {
-        herpooles.y += 10.0;
+    if pressed_keys.get().down && herpooles.get().y < 800.0 {
+        herpooles.get().y += 10.0;
     }
 }

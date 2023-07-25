@@ -5,7 +5,6 @@ mod geometry;
 mod render;
 #[macro_use]
 mod utils;
-use game::Herpooles;
 use utils::set_panic_hook;
 
 use wasm_bindgen::prelude::*;
@@ -81,10 +80,11 @@ fn main() -> Result<(), JsValue> {
     let mut zombie = game::Zombie::new();
     // needs interior mutability because it may move (change coordinates) and also fire poo (push
     // poo in its vec). Also it probably needs to be thread safe.
-    let mut herpooles = game::Herpooles::new();
+    let herpooles = game::Herpooles::new();
+    let herpooles = Rc::new(Cell::new(herpooles));
 
-    //let herpooles = Rc::new(Cell::new(herpooles));
-    //let closed_herpooles = herpooles.clone();
+    // moved in the main_loop_closure
+    let closed_herpooles = herpooles.clone();
 
     // game-over sound
     let audio =
@@ -99,23 +99,11 @@ fn main() -> Result<(), JsValue> {
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
     let main_loop_closure = Closure::wrap(Box::new(move || {
-        game::draw(&ctx, &mut herpooles, &mut zombie, &mut poo);
+        game::step(&ctx, &closed_herpooles, &mut zombie, &mut poo);
+        // TODO this should be called in the step, no?
+        game::move_herpooles(&closed_herpooles, &pressed_keys);
 
-        //game::move_herpooles(&herpooles, pressed_keys);
-        if pressed_keys.get().right && herpooles.x < 1000.0 {
-            herpooles.x += 10.0;
-        }
-        if pressed_keys.get().left && herpooles.x > 0.0 {
-            herpooles.x -= 10.0;
-        }
-        if pressed_keys.get().up && herpooles.y > 0.0 {
-            herpooles.y -= 10.0;
-        }
-        if pressed_keys.get().down && herpooles.y < 800.0 {
-            herpooles.y += 10.0;
-        }
-
-        if herpooles.alive {
+        if closed_herpooles.get().alive {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
             closed_animation_id.set(id);
         } else {
@@ -133,7 +121,9 @@ fn main() -> Result<(), JsValue> {
     let pp_animation_id = animation_id.clone();
     callbacks::add_play_pause_control(pp_animation_id, p, &document);
     callbacks::add_restart_event(&document);
-    //callbacks::add_shoot(&herpooles, &document);
+
+    // fist Rc moved in here
+    callbacks::add_shoot(herpooles, &document);
 
     Ok(())
 }
