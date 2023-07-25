@@ -80,7 +80,6 @@ fn main() -> Result<(), JsValue> {
     callbacks::add_key_events(&pressed_keys, &document); // pressed_keys rc not moved in here?
 
     // actors
-    let mut poo = game::Poo::new();
     let mut zombie = game::Zombie::new();
     // needs interior mutability because it may move (change coordinates) and also fire poo (push
     // poo in its vec). Also it probably needs to be thread safe.
@@ -99,15 +98,9 @@ fn main() -> Result<(), JsValue> {
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
     let main_loop_closure = Closure::wrap(Box::new(move || {
-        game::step(
-            &ctx,
-            &closed_herpooles,
-            &mut zombie,
-            &mut poo,
-            &pressed_keys,
-        );
+        game::step(&ctx, &closed_herpooles, &mut zombie, &pressed_keys);
 
-        if closed_herpooles.borrow().alive {
+        if closed_herpooles.borrow().is_alive() {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
             closed_animation_id.set(id);
         } else {

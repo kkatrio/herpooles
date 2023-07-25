@@ -7,9 +7,10 @@ use std::rc::Rc;
 
 #[derive(Default, Clone)]
 pub struct Herpooles {
-    pub x: f32,
+    pub x: f32, // pub needed to render
     pub y: f32,
-    pub alive: bool,
+    alive: bool,
+    poo: Vec<Poo>,
 }
 
 impl Herpooles {
@@ -18,10 +19,17 @@ impl Herpooles {
             x: 500.0,
             y: 500.0,
             alive: true,
+            poo: vec![],
         }
     }
 
-    pub fn fire_poo(&self) {}
+    pub fn fire_poo(&mut self) {
+        self.poo.push(Poo::new());
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.alive
+    }
 }
 
 pub struct Zombie {
@@ -35,10 +43,11 @@ impl Zombie {
     }
 }
 
+#[derive(Clone)]
 pub struct Poo {
     pub x: f32,
     pub y: f32,
-    pub direction: Direction,
+    direction: Direction,
 }
 
 impl Poo {
@@ -76,7 +85,7 @@ pub enum Direction {
     West,
 }
 
-fn is_herpooles_alive(h: &Herpooles, z: &Zombie) -> bool {
+fn zombies_have_reached_herpooles(h: &Herpooles, z: &Zombie) -> bool {
     let d = (h.x - z.x) * (h.x - z.x) + (h.y - z.y) * (h.y - z.y);
     //log!("d: {}", d);
     d > 400.0 // TODO: calculate based on herpooles and zombie area
@@ -123,17 +132,16 @@ pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
     h: &Rc<RefCell<Herpooles>>,
     z: &mut Zombie,
-    p: &mut Poo,
     pressed_keys: &Rc<Cell<PressedKeys>>,
 ) {
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
     // herpooles
-    let mut hcv = h.borrow_mut();
+    let mut h_ref = h.borrow_mut();
     let pressed_keys = pressed_keys.get();
-    move_herpooles(&mut hcv, &pressed_keys);
-    //h.set(hcv); // set the value back to the cell, so that it is updated for the next step
-    let herpooles_state = if is_herpooles_alive(&hcv, z) {
+    move_herpooles(&mut h_ref, &pressed_keys);
+    //h.set(h_ref); // set the value back to the cell, so that it is updated for the next step
+    let herpooles_state = if zombies_have_reached_herpooles(&h_ref, z) {
         HState::Alive
     } else {
         HState::Dead
@@ -141,17 +149,19 @@ pub fn step(
     if herpooles_state == HState::Dead {
         log!("herpooles state dead!");
         //let mut in_h = h.take();
-        hcv.alive = false;
+        h_ref.alive = false;
         //h.set(in_h);
     }
-    render::draw_herpooles(ctx, &hcv, herpooles_state.color());
+    render::draw_herpooles(ctx, &h_ref, herpooles_state.color());
 
     // poo
-    move_poo(p);
-    render::draw_poo(ctx, p);
+    h_ref.poo.iter_mut().for_each(|p| {
+        move_poo(p);
+        render::draw_poo(ctx, p);
+    });
 
     // zombies
-    move_zombies(z, &hcv);
+    move_zombies(z, &h_ref);
     render::draw_zombie(ctx, &z, "grey");
 }
 
