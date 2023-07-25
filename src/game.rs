@@ -5,12 +5,13 @@ use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Herpooles {
     pub x: f32, // pub needed to render
     pub y: f32,
     alive: bool,
     poo: Vec<Poo>,
+    bearing: Direction,
 }
 
 impl Herpooles {
@@ -20,11 +21,13 @@ impl Herpooles {
             y: 500.0,
             alive: true,
             poo: vec![],
+            bearing: Direction::North,
         }
     }
 
     pub fn fire_poo(&mut self) {
-        self.poo.push(Poo::new());
+        // TODO: clean some poo from the vec
+        self.poo.push(Poo::new(&self.x, &self.y, self.bearing));
     }
 
     pub fn is_alive(&self) -> bool {
@@ -51,11 +54,11 @@ pub struct Poo {
 }
 
 impl Poo {
-    pub fn new() -> Poo {
+    pub fn new(x: &f32, y: &f32, direction: Direction) -> Poo {
         Poo {
-            x: 100.0,
-            y: 100.0,
-            direction: Direction::South,
+            x: *x,
+            y: *y,
+            direction: direction,
         }
     }
 }
@@ -167,15 +170,19 @@ pub fn step(
 
 pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
     if pressed_keys.right && herpooles.x < 1000.0 {
+        herpooles.bearing = Direction::East;
         herpooles.x += 10.0;
     }
     if pressed_keys.left && herpooles.x > 0.0 {
+        herpooles.bearing = Direction::West;
         herpooles.x -= 10.0;
     }
     if pressed_keys.up && herpooles.y > 0.0 {
+        herpooles.bearing = Direction::North;
         herpooles.y -= 10.0;
     }
     if pressed_keys.down && herpooles.y < 800.0 {
+        herpooles.bearing = Direction::South;
         herpooles.y += 10.0;
     }
 }
