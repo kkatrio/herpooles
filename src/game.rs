@@ -3,9 +3,7 @@ use crate::render;
 use crate::PressedKeys;
 use std::cell::Cell;
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
 #[derive(Default, Copy, Clone)]
 pub struct Herpooles {
     pub x: f32,
@@ -13,9 +11,7 @@ pub struct Herpooles {
     pub alive: bool,
 }
 
-#[wasm_bindgen]
 impl Herpooles {
-    #[wasm_bindgen(constructor)] // why is this needed
     pub fn new() -> Herpooles {
         Herpooles {
             x: 500.0,
@@ -27,30 +23,24 @@ impl Herpooles {
     pub fn fire_poo(&self) {}
 }
 
-#[wasm_bindgen]
 pub struct Zombie {
     pub x: f32,
     pub y: f32,
 }
 
-#[wasm_bindgen]
 impl Zombie {
-    #[wasm_bindgen(constructor)]
     pub fn new() -> Zombie {
         Zombie { x: 500.0, y: 400.0 }
     }
 }
 
-#[wasm_bindgen]
 pub struct Poo {
     pub x: f32,
     pub y: f32,
     pub direction: Direction,
 }
 
-#[wasm_bindgen]
 impl Poo {
-    #[wasm_bindgen(constructor)]
     pub fn new() -> Poo {
         Poo {
             x: 100.0,
@@ -77,7 +67,6 @@ impl HState {
     }
 }
 
-#[wasm_bindgen]
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
     North,
@@ -134,48 +123,48 @@ pub fn step(
     h: &Rc<Cell<Herpooles>>,
     z: &mut Zombie,
     p: &mut Poo,
+    pressed_keys: &Rc<Cell<PressedKeys>>,
 ) {
-    //set_panic_hook();
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
     // herpooles
-    let h_ref = h.get(); // pass the reference in the fucntions below
-
-    let herpooles_state = if is_herpooles_alive(&h_ref, z) {
+    let mut hcv = h.get();
+    let pressed_keys = pressed_keys.get();
+    move_herpooles(&mut hcv, &pressed_keys);
+    h.set(hcv); // set the value back to the cell, so that it is updated for the next step
+    let herpooles_state = if is_herpooles_alive(&hcv, z) {
         HState::Alive
     } else {
         HState::Dead
     };
-    render::draw_herpooles(ctx, &h_ref, herpooles_state.color());
-
-    // poo
-    move_poo(p);
-    render::draw_poo(ctx, p);
-
-    // zombies
-    move_zombies(z, &h_ref);
-    render::draw_zombie(ctx, &z, "grey");
-
-    // set flag to dead, so that js stops frame requests
     if herpooles_state == HState::Dead {
         log!("herpooles state dead!");
         let mut in_h = h.take();
         in_h.alive = false;
         h.set(in_h);
     }
+    render::draw_herpooles(ctx, &hcv, herpooles_state.color());
+
+    // poo
+    move_poo(p);
+    render::draw_poo(ctx, p);
+
+    // zombies
+    move_zombies(z, &hcv);
+    render::draw_zombie(ctx, &z, "grey");
 }
 
-pub fn move_herpooles(herpooles: &Rc<Cell<Herpooles>>, pressed_keys: &Rc<Cell<PressedKeys>>) {
-    if pressed_keys.get().right && herpooles.get().x < 1000.0 {
-        herpooles.get().x += 10.0;
+pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
+    if pressed_keys.right && herpooles.x < 1000.0 {
+        herpooles.x += 10.0;
     }
-    if pressed_keys.get().left && herpooles.get().x > 0.0 {
-        herpooles.get().x -= 10.0;
+    if pressed_keys.left && herpooles.x > 0.0 {
+        herpooles.x -= 10.0;
     }
-    if pressed_keys.get().up && herpooles.get().y > 0.0 {
-        herpooles.get().y -= 10.0;
+    if pressed_keys.up && herpooles.y > 0.0 {
+        herpooles.y -= 10.0;
     }
-    if pressed_keys.get().down && herpooles.get().y < 800.0 {
-        herpooles.get().y += 10.0;
+    if pressed_keys.down && herpooles.y < 800.0 {
+        herpooles.y += 10.0;
     }
 }

@@ -63,6 +63,10 @@ fn main() -> Result<(), JsValue> {
     //let southwall: f32 = htmlcanvas.height() as f32;
     //let northwall: f32 = 0.0;
 
+    // game-over sound
+    let audio =
+        web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav").expect("Could not load wav");
+
     // keyboard events
     let pressed_keys = PressedKeys {
         left: false,
@@ -73,7 +77,7 @@ fn main() -> Result<(), JsValue> {
     // pressed_keys need shared ownership, but do they need interior mutability? the main loop does
     // not set a value -- no clone here
     let pressed_keys = Rc::new(Cell::new(pressed_keys));
-    callbacks::add_key_events(&pressed_keys, &document);
+    callbacks::add_key_events(&pressed_keys, &document); // pressed_keys rc not moved in here?
 
     // actors
     let mut poo = game::Poo::new();
@@ -82,26 +86,26 @@ fn main() -> Result<(), JsValue> {
     // poo in its vec). Also it probably needs to be thread safe.
     let herpooles = game::Herpooles::new();
     let herpooles = Rc::new(Cell::new(herpooles));
-
     // moved in the main_loop_closure
     let closed_herpooles = herpooles.clone();
 
-    // game-over sound
-    let audio =
-        web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav").expect("Could not load wav");
-
-    // main game loop
     // animation_id is used in the first frame request.
     let animation_id = Rc::new(Cell::new(0));
     // moved in the main_loop_closure
     let closed_animation_id = animation_id.clone();
-    // create two Rc
+
+    // main game loop
+    // create two Rc -- one is moved in the closure
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
     let main_loop_closure = Closure::wrap(Box::new(move || {
-        game::step(&ctx, &closed_herpooles, &mut zombie, &mut poo);
-        // TODO this should be called in the step, no?
-        game::move_herpooles(&closed_herpooles, &pressed_keys);
+        game::step(
+            &ctx,
+            &closed_herpooles,
+            &mut zombie,
+            &mut poo,
+            &pressed_keys,
+        );
 
         if closed_herpooles.get().alive {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
@@ -115,14 +119,13 @@ fn main() -> Result<(), JsValue> {
     // request the first frame
     animation_id.set(request_animation_frame(f.borrow().as_ref().unwrap()));
 
-    // we want to call the main_loop closure from the play_pause losure, so we create another clone of the main_loop_closure Rc.
+    // we want to call the main_loop closure from the play_pause closure, so we create another clone of the main_loop_closure Rc.
     // Same for the animation_id.
     let p = f.clone();
     let pp_animation_id = animation_id.clone();
     callbacks::add_play_pause_control(pp_animation_id, p, &document);
     callbacks::add_restart_event(&document);
-
-    // fist Rc moved in here
+    // fist herpooles Rc moved in here
     callbacks::add_shoot(herpooles, &document);
 
     Ok(())
