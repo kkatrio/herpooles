@@ -11,7 +11,7 @@ pub struct Herpooles {
     pub y: f32,
     alive: bool,
     poo: Vec<Poo>,
-    bearing: Direction,
+    pub bearing: Direction, // for render
 }
 
 impl Herpooles {
@@ -124,7 +124,7 @@ fn move_poo(p: &mut Poo) {
             y: p_next_y,
         },
     );
-    let poo_speed = 0.5;
+    let poo_speed = 0.6;
     let mv_vec = direction_vec.unit_vec() * poo_speed;
     p.x = p.x + mv_vec.x;
     p.y = p.y + mv_vec.y;
@@ -171,18 +171,18 @@ pub fn step(
 pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
     if pressed_keys.right && herpooles.x < 1000.0 {
         herpooles.bearing = Direction::East;
-        herpooles.x += 10.0;
+        herpooles.x += 2.0;
     }
     if pressed_keys.left && herpooles.x > 0.0 {
         herpooles.bearing = Direction::West;
-        herpooles.x -= 10.0;
+        herpooles.x -= 2.0;
     }
     if pressed_keys.up && herpooles.y > 0.0 {
         herpooles.bearing = Direction::North;
-        herpooles.y -= 10.0;
+        herpooles.y -= 2.0;
     }
     if pressed_keys.down && herpooles.y < 800.0 {
         herpooles.bearing = Direction::South;
-        herpooles.y += 10.0;
+        herpooles.y += 2.0;
     }
 }

@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 
+use crate::game::Direction;
 use crate::game::Herpooles;
 use crate::game::Poo;
 use crate::game::Zombie;
@@ -86,23 +87,46 @@ pub fn draw_herpooles(ctx: &web_sys::CanvasRenderingContext2d, h: &Herpooles, c:
         start_y + head_radius + neck_height,
     );
 
-    // Draw the hands -- elbow is at start_x - arm_width * elbow_relative_point
+    // Draw the hands
+    let (left_end_x, right_end_x, left_end_y, right_end_y) = match h.bearing {
+        Direction::East => (
+            start_x + arm_width * elbow_relative_point,
+            start_x + arm_width,
+            start_y + head_radius + body_height * 0.1, // TODO: parameterize the tilt of the hands
+            start_y + head_radius + body_height * 0.1,
+        ),
+        Direction::West => (
+            start_x - arm_width, // until the end of the hand
+            start_x - arm_width * elbow_relative_point,
+            start_y + head_radius + body_height * 0.1,
+            start_y + head_radius + body_height * 0.1,
+        ),
+        Direction::South => (
+            start_x - arm_width * elbow_relative_point - 3.5, // until the elbow + something extra to not overlap his cap
+            start_x + arm_width * elbow_relative_point + 3.5,
+            start_y + head_radius + body_height * 0.5,
+            start_y + head_radius + body_height * 0.5,
+        ),
+        Direction::North => (
+            start_x - arm_width * elbow_relative_point, // until the elbow
+            start_x + arm_width * elbow_relative_point,
+            start_y + head_radius - body_height * 0.1,
+            start_y + head_radius - body_height * 0.1,
+        ),
+    };
+    // left hand -- elbow is at start_x - arm_width * elbow_relative_point
     ctx.move_to(
         start_x - arm_width * elbow_relative_point,
         start_y + head_radius + neck_height,
     );
-    ctx.line_to(
-        start_x - arm_width,                       // until the end of the hand
-        start_y + head_radius + body_height * 0.1, // TODO: parameterize the tilt of the hands
-    );
+    ctx.line_to(left_end_x, left_end_y);
+
+    // right hand
     ctx.move_to(
         start_x + arm_width * elbow_relative_point,
         start_y + head_radius + neck_height,
     );
-    ctx.line_to(
-        start_x + arm_width, // until the end of the hand
-        start_y + head_radius + body_height * 0.1,
-    );
+    ctx.line_to(right_end_x, right_end_y);
     ctx.close_path();
     ctx.stroke();
 
