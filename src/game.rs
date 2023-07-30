@@ -70,22 +70,22 @@ impl Poo {
     }
 }
 
-//#[derive(PartialEq)]
-//enum HState {
-//    Alive,
-//    Dead,
-//}
-//
-//// or maybe use associated constants or constans in another mod:
-//// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
-//impl HState {
-//    fn color(&self) -> &str {
-//        match *self {
-//            HState::Dead => "red",
-//            HState::Alive => "green",
-//        }
-//    }
-//}
+#[derive(PartialEq)]
+enum HState {
+    Alive,
+    Dead,
+}
+
+// or maybe use associated constants or constans in another mod:
+// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
+impl HState {
+    fn color(&self) -> &str {
+        match *self {
+            HState::Dead => "red",
+            HState::Alive => "green",
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
@@ -161,7 +161,7 @@ pub fn step(
         move_zombie(z, &h_ref);
     });
 
-    // draw herpooles, draw zombies
+    // check
     zombies.iter().for_each(|z| {
         if zombies_have_not_reached_herpooles(&h_ref, z) {
             render::draw_herpooles(ctx, &h_ref, "green");
@@ -173,9 +173,14 @@ pub fn step(
         if z.walking {
             render::draw_zombie(ctx, z, "grey");
         } else {
-            h_ref.alive = false; // termporarily game over because we have one zombie
             render::draw_zombie(ctx, z, "red");
         }
+    });
+
+    // draw zombies and herpooles
+    render::draw_herpooles(ctx, &h_ref, state.color());
+    zombies.iter().for_each(|z| {
+        render::draw_zombie(ctx, z, z.color());
     });
 
     // move and draw poo
@@ -186,7 +191,8 @@ pub fn step(
 
     // check collision and mark for cleaning
     // zombies is a &mut
-    for z in zombies {
+    // https://stackoverflow.com/questions/68936034/mutable-reference-to-a-vector-was-moved-due-to-this-implicit-call-to-into-iter
+    for z in zombies.into_iter() {
         for p in &mut h_ref.poo {
             if hit_zombie(p, z) {
                 p.must_clean = true;
@@ -198,9 +204,13 @@ pub fn step(
     // clean poo
     // retain removes when predicate is false
     h_ref.poo.retain(|&p| !p.must_clean);
+
+    // clean dirty zombies
+    zombies.retain(|z| z.walking);
 }
 
 pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
+    log!("move herpooles");
     if pressed_keys.right && herpooles.x < 1000.0 {
         herpooles.bearing = Direction::East;
         herpooles.x += 2.0;
