@@ -66,6 +66,9 @@ fn main() -> Result<(), JsValue> {
     // game-over sound
     let audio =
         web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav").expect("Could not load wav");
+    // zombie kill
+    let audio_zombie_kill =
+        web_sys::HtmlAudioElement::new_with_src("zombie-die.wav").expect("Could not load wav");
 
     // keyboard events
     let pressed_keys = PressedKeys {
@@ -98,7 +101,13 @@ fn main() -> Result<(), JsValue> {
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
     let main_loop_closure = Closure::wrap(Box::new(move || {
-        game::step(&ctx, &closed_herpooles, &mut zombie, &pressed_keys);
+        game::step(
+            &ctx,
+            &closed_herpooles,
+            &mut zombie,
+            &pressed_keys,
+            &audio_zombie_kill,
+        );
 
         if closed_herpooles.borrow().is_alive() {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());

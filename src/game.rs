@@ -57,6 +57,7 @@ impl Zombie {
         }
     }
 
+    // no effect since we clean dirty zombies in the same frame
     fn color(&self) -> &str {
         match self.walking {
             true => "grey",
@@ -166,6 +167,7 @@ pub fn step(
     h: &Rc<RefCell<Herpooles>>,
     zombies: &mut Vec<Zombie>,
     pressed_keys: &Rc<Cell<PressedKeys>>,
+    zombie_kill_sound: &web_sys::HtmlAudioElement,
 ) {
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
@@ -207,6 +209,7 @@ pub fn step(
             if hit_zombie(p, z) {
                 p.must_clean = true;
                 z.walking = false;
+                let _promise = zombie_kill_sound.play().unwrap();
             }
         }
     }
