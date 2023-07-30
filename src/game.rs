@@ -33,6 +33,13 @@ impl Herpooles {
     pub fn is_alive(&self) -> bool {
         self.alive
     }
+
+    fn color(&self) -> &str {
+        match self.alive {
+            true => "green",
+            false => "red",
+        }
+    }
 }
 
 pub struct Zombie {
@@ -47,6 +54,13 @@ impl Zombie {
             x: 500.0,
             y: 400.0,
             walking: true,
+        }
+    }
+
+    fn color(&self) -> &str {
+        match self.walking {
+            true => "grey",
+            false => "yellow",
         }
     }
 }
@@ -70,22 +84,22 @@ impl Poo {
     }
 }
 
-#[derive(PartialEq)]
-enum HState {
-    Alive,
-    Dead,
-}
-
-// or maybe use associated constants or constans in another mod:
-// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
-impl HState {
-    fn color(&self) -> &str {
-        match *self {
-            HState::Dead => "red",
-            HState::Alive => "green",
-        }
-    }
-}
+//#[derive(PartialEq)]
+//enum HState {
+//    Alive,
+//    Dead,
+//}
+//
+//// or maybe use associated constants or constans in another mod:
+//// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
+//impl HState {
+//    fn color(&self) -> &str {
+//        match *self {
+//            HState::Dead => "red",
+//            HState::Alive => "green",
+//        }
+//    }
+//}
 
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
@@ -95,12 +109,16 @@ pub enum Direction {
     West,
 }
 
-fn zombies_have_not_reached_herpooles(h: &Herpooles, z: &Zombie) -> bool {
+fn zombies_have_reached_herpooles(h: &Herpooles, z: &Zombie) -> bool {
     let d = (h.x - z.x) * (h.x - z.x) + (h.y - z.y) * (h.y - z.y);
     //log!("d: {}", d);
-    d > 400.0 // TODO: calculate based on herpooles and zombie area
+    if d < 400.0 {
+        log!("herpooles state dead!");
+    }
+    d < 400.0 // TODO: calculate based on herpooles and zombie area
 }
 
+// TODO: template ?
 fn hit_zombie(p: &Poo, z: &Zombie) -> bool {
     let d = (p.x - z.x) * (p.x - z.x) + (p.y - z.y) * (p.y - z.y);
     d < 400.0 // TODO: calculate based on area
@@ -161,24 +179,16 @@ pub fn step(
         move_zombie(z, &h_ref);
     });
 
-    // check
-    zombies.iter().for_each(|z| {
-        if zombies_have_not_reached_herpooles(&h_ref, z) {
-            render::draw_herpooles(ctx, &h_ref, "green");
-        } else {
-            log!("herpooles state dead!");
-            h_ref.alive = false;
-            render::draw_herpooles(ctx, &h_ref, "red");
-        };
-        if z.walking {
-            render::draw_zombie(ctx, z, "grey");
-        } else {
-            render::draw_zombie(ctx, z, "red");
-        }
-    });
+    // check if any zombie has reached herpooles
+    // An empty iterator returns false.
+    if !zombies.is_empty() {
+        h_ref.alive = zombies
+            .iter()
+            .any(|z| !zombies_have_reached_herpooles(&h_ref, z));
+    }
 
     // draw zombies and herpooles
-    render::draw_herpooles(ctx, &h_ref, state.color());
+    render::draw_herpooles(ctx, &h_ref, &h_ref.color());
     zombies.iter().for_each(|z| {
         render::draw_zombie(ctx, z, z.color());
     });
@@ -207,10 +217,12 @@ pub fn step(
 
     // clean dirty zombies
     zombies.retain(|z| z.walking);
+    if zombies.is_empty() {
+        log!("no zombies");
+    }
 }
 
 pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
-    log!("move herpooles");
     if pressed_keys.right && herpooles.x < 1000.0 {
         herpooles.bearing = Direction::East;
         herpooles.x += 2.0;
