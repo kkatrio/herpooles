@@ -38,19 +38,25 @@ impl Herpooles {
 pub struct Zombie {
     pub x: f32,
     pub y: f32,
+    walking: bool,
 }
 
 impl Zombie {
     pub fn new() -> Zombie {
-        Zombie { x: 500.0, y: 400.0 }
+        Zombie {
+            x: 500.0,
+            y: 400.0,
+            walking: true,
+        }
     }
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Poo {
     pub x: f32,
     pub y: f32,
     direction: Direction,
+    must_clean: bool,
 }
 
 impl Poo {
@@ -59,26 +65,27 @@ impl Poo {
             x: *x,
             y: *y,
             direction: direction,
+            must_clean: false,
         }
     }
 }
 
-#[derive(PartialEq)]
-enum HState {
-    Alive,
-    Dead,
-}
-
-// or maybe use associated constants or constans in another mod:
-// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
-impl HState {
-    fn color(&self) -> &str {
-        match *self {
-            HState::Dead => "red",
-            HState::Alive => "green",
-        }
-    }
-}
+//#[derive(PartialEq)]
+//enum HState {
+//    Alive,
+//    Dead,
+//}
+//
+//// or maybe use associated constants or constans in another mod:
+//// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
+//impl HState {
+//    fn color(&self) -> &str {
+//        match *self {
+//            HState::Dead => "red",
+//            HState::Alive => "green",
+//        }
+//    }
+//}
 
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
@@ -88,13 +95,18 @@ pub enum Direction {
     West,
 }
 
-fn zombies_have_reached_herpooles(h: &Herpooles, z: &Zombie) -> bool {
+fn zombies_have_not_reached_herpooles(h: &Herpooles, z: &Zombie) -> bool {
     let d = (h.x - z.x) * (h.x - z.x) + (h.y - z.y) * (h.y - z.y);
     //log!("d: {}", d);
     d > 400.0 // TODO: calculate based on herpooles and zombie area
 }
 
-fn move_zombies(z: &mut Zombie, h: &Herpooles) {
+fn hit_zombie(p: &Poo, z: &Zombie) -> bool {
+    let d = (p.x - z.x) * (p.x - z.x) + (p.y - z.y) * (p.y - z.y);
+    d < 400.0 // TODO: calculate based on area
+}
+
+fn move_zombie(z: &mut Zombie, h: &Herpooles) {
     // find vector z -> h
     let zp = geometry::Point { x: z.x, y: z.y };
     let hp = geometry::Point { x: h.x, y: h.y };
@@ -134,38 +146,58 @@ fn move_poo(p: &mut Poo) {
 pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
     h: &Rc<RefCell<Herpooles>>,
-    z: &mut Zombie,
+    zombies: &mut Vec<Zombie>,
     pressed_keys: &Rc<Cell<PressedKeys>>,
 ) {
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
 
-    // herpooles
     let mut h_ref = h.borrow_mut();
     let pressed_keys = pressed_keys.get();
-    move_herpooles(&mut h_ref, &pressed_keys);
-    //h.set(h_ref); // set the value back to the cell, so that it is updated for the next step
-    let herpooles_state = if zombies_have_reached_herpooles(&h_ref, z) {
-        HState::Alive
-    } else {
-        HState::Dead
-    };
-    if herpooles_state == HState::Dead {
-        log!("herpooles state dead!");
-        //let mut in_h = h.take();
-        h_ref.alive = false;
-        //h.set(in_h);
-    }
-    render::draw_herpooles(ctx, &h_ref, herpooles_state.color());
 
-    // poo
+    // move herpooles
+    move_herpooles(&mut h_ref, &pressed_keys);
+    // move zombies
+    zombies.iter_mut().for_each(|z| {
+        move_zombie(z, &h_ref);
+    });
+
+    // draw herpooles, draw zombies
+    zombies.iter().for_each(|z| {
+        if zombies_have_not_reached_herpooles(&h_ref, z) {
+            render::draw_herpooles(ctx, &h_ref, "green");
+        } else {
+            log!("herpooles state dead!");
+            h_ref.alive = false;
+            render::draw_herpooles(ctx, &h_ref, "red");
+        };
+        if z.walking {
+            render::draw_zombie(ctx, z, "grey");
+        } else {
+            h_ref.alive = false; // termporarily game over because we have one zombie
+            render::draw_zombie(ctx, z, "red");
+        }
+    });
+
+    // move and draw poo
     h_ref.poo.iter_mut().for_each(|p| {
         move_poo(p);
         render::draw_poo(ctx, p);
     });
 
-    // zombies
-    move_zombies(z, &h_ref);
-    render::draw_zombie(ctx, &z, "grey");
+    // check collision and mark for cleaning
+    // zombies is a &mut
+    for z in zombies {
+        for p in &mut h_ref.poo {
+            if hit_zombie(p, z) {
+                p.must_clean = true;
+                z.walking = false;
+            }
+        }
+    }
+
+    // clean poo
+    // retain removes when predicate is false
+    h_ref.poo.retain(|&p| !p.must_clean);
 }
 
 pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {

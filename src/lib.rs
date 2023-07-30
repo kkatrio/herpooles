@@ -80,7 +80,7 @@ fn main() -> Result<(), JsValue> {
     callbacks::add_key_events(&pressed_keys, &document); // pressed_keys rc not moved in here?
 
     // actors
-    let mut zombie = game::Zombie::new();
+    let mut zombie = vec![game::Zombie::new()];
     // needs interior mutability because it may move (change coordinates) and also fire poo (push
     // poo in its vec). Also it probably needs to be thread safe.
     let herpooles = game::Herpooles::new();
