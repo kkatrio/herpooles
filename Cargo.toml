@@ -13,6 +13,8 @@ default = ["console_error_panic_hook"]
 wasm-bindgen = "0.2.87"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 approx = "0.5.1"
+rand = {version = "0.8.5", features = ["std", "std_rng"]}
+getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.web-sys]
 version = "0.3.4"

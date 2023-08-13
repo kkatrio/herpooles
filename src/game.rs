@@ -1,6 +1,7 @@
 use crate::geometry;
 use crate::render;
 use crate::PressedKeys;
+use rand;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -9,7 +10,7 @@ use std::rc::Rc;
 pub struct Herpooles {
     pub x: f32, // pub needed to render
     pub y: f32,
-    alive: bool,
+    dead: bool,
     poo: Vec<Poo>,
     pub bearing: Direction, // for render
 }
@@ -19,7 +20,7 @@ impl Herpooles {
         Herpooles {
             x: 500.0,
             y: 500.0,
-            alive: true,
+            dead: true,
             poo: vec![],
             bearing: Direction::North,
         }
@@ -31,13 +32,13 @@ impl Herpooles {
     }
 
     pub fn is_alive(&self) -> bool {
-        self.alive
+        !self.dead
     }
 
     fn color(&self) -> &str {
-        match self.alive {
-            true => "green",
-            false => "red",
+        match self.dead {
+            true => "red",
+            false => "green",
         }
     }
 }
@@ -50,9 +51,15 @@ pub struct Zombie {
 
 impl Zombie {
     pub fn new() -> Zombie {
+        let xr = rand::random::<f32>();
+        //let yr = rand::random::<f32>();
+        let x_variance = 1000.0;
+        // let y_variance = 10.0;
+        let x_start = 0.0;
+        let y_start = 200.0;
         Zombie {
-            x: 500.0,
-            y: 400.0,
+            x: x_start + xr * x_variance,
+            y: y_start,
             walking: true,
         }
     }
@@ -110,19 +117,22 @@ pub enum Direction {
     West,
 }
 
-fn zombies_have_reached_herpooles(h: &Herpooles, z: &Zombie) -> bool {
+fn zombies_reached(h: &Herpooles, z: &Zombie) -> bool {
     let d = (h.x - z.x) * (h.x - z.x) + (h.y - z.y) * (h.y - z.y);
     //log!("d: {}", d);
     if d < 400.0 {
-        log!("herpooles state dead!");
+        log!("herpooles dead!");
     }
     d < 400.0 // TODO: calculate based on herpooles and zombie area
 }
 
-// TODO: template ?
 fn hit_zombie(p: &Poo, z: &Zombie) -> bool {
-    let d = (p.x - z.x) * (p.x - z.x) + (p.y - z.y) * (p.y - z.y);
-    d < 400.0 // TODO: calculate based on area
+    if p.must_clean {
+        false
+    } else {
+        let d = (p.x - z.x) * (p.x - z.x) + (p.y - z.y) * (p.y - z.y);
+        d < 400.0 // TODO: calculate based on area
+    }
 }
 
 fn move_zombie(z: &mut Zombie, h: &Herpooles) {
@@ -161,6 +171,25 @@ fn move_poo(p: &mut Poo) {
     p.y = p.y + mv_vec.y;
 }
 
+pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
+    if pressed_keys.right && herpooles.x < 1000.0 {
+        herpooles.bearing = Direction::East;
+        herpooles.x += 2.0;
+    }
+    if pressed_keys.left && herpooles.x > 0.0 {
+        herpooles.bearing = Direction::West;
+        herpooles.x -= 2.0;
+    }
+    if pressed_keys.up && herpooles.y > 0.0 {
+        herpooles.bearing = Direction::North;
+        herpooles.y -= 2.0;
+    }
+    if pressed_keys.down && herpooles.y < 800.0 {
+        herpooles.bearing = Direction::South;
+        herpooles.y += 2.0;
+    }
+}
+
 // h is a Rc clone
 pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
@@ -169,7 +198,7 @@ pub fn step(
     pressed_keys: &Rc<Cell<PressedKeys>>,
     zombie_kill_sound: &web_sys::HtmlAudioElement,
 ) {
-    ctx.clear_rect(1.0, 1.0, 998.0, 798.0);
+    ctx.clear_rect(1.0, 1.0, 998.0, 798.0); //TODO: parameterize this
 
     let mut h_ref = h.borrow_mut();
     let pressed_keys = pressed_keys.get();
@@ -181,12 +210,9 @@ pub fn step(
         move_zombie(z, &h_ref);
     });
 
-    // check if any zombie has reached herpooles
     // An empty iterator returns false.
     if !zombies.is_empty() {
-        h_ref.alive = zombies
-            .iter()
-            .any(|z| !zombies_have_reached_herpooles(&h_ref, z));
+        h_ref.dead = zombies.iter().any(|z| zombies_reached(&h_ref, &z));
     }
 
     // draw zombies and herpooles
@@ -204,9 +230,9 @@ pub fn step(
     // check collision and mark for cleaning
     // zombies is a &mut
     // https://stackoverflow.com/questions/68936034/mutable-reference-to-a-vector-was-moved-due-to-this-implicit-call-to-into-iter
-    for z in zombies.into_iter() {
+    for z in zombies.iter_mut() {
         for p in &mut h_ref.poo {
-            if hit_zombie(p, z) {
+            if hit_zombie(&p, &z) {
                 p.must_clean = true;
                 z.walking = false;
                 let _promise = zombie_kill_sound.play().unwrap();
@@ -225,21 +251,8 @@ pub fn step(
     }
 }
 
-pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
-    if pressed_keys.right && herpooles.x < 1000.0 {
-        herpooles.bearing = Direction::East;
-        herpooles.x += 2.0;
-    }
-    if pressed_keys.left && herpooles.x > 0.0 {
-        herpooles.bearing = Direction::West;
-        herpooles.x -= 2.0;
-    }
-    if pressed_keys.up && herpooles.y > 0.0 {
-        herpooles.bearing = Direction::North;
-        herpooles.y -= 2.0;
-    }
-    if pressed_keys.down && herpooles.y < 800.0 {
-        herpooles.bearing = Direction::South;
-        herpooles.y += 2.0;
+pub fn set(zombies: &mut Vec<Zombie>) {
+    if zombies.len() < 10 {
+        zombies.push(Zombie::new());
     }
 }
