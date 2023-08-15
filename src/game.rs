@@ -92,22 +92,44 @@ impl Poo {
     }
 }
 
-//#[derive(PartialEq)]
-//enum HState {
-//    Alive,
-//    Dead,
-//}
-//
-//// or maybe use associated constants or constans in another mod:
-//// https://stackoverflow.com/questions/36928569/how-can-i-create-enums-with-constant-values-in-rust
-//impl HState {
-//    fn color(&self) -> &str {
-//        match *self {
-//            HState::Dead => "red",
-//            HState::Alive => "green",
-//        }
-//    }
-//}
+pub struct Controller {
+    level: u16,
+    num_zombies: u16,
+    speed: f32,
+    zombies: Vec<Zombie>,
+}
+
+impl Controller {
+    pub fn start() -> Self {
+        Self {
+            level: 1,
+            num_zombies: 10,
+            speed: 0.5,
+            zombies: (0..10).map(|_| Zombie::new()).collect(),
+        }
+    }
+
+    // TODO: is the &mut reference ok here? maybe it should not be accessible in public.
+    pub fn run(&mut self) {
+        if self.zombies.len() == 0 {
+            self.reset()
+        }
+    }
+
+    fn reset(&mut self) {
+        self.level = self.level + 1;
+        self.num_zombies = self.level * 10;
+        self.speed = self.speed + 0.1;
+        self.zombies
+            .resize_with(self.num_zombies.into(), || Zombie::new());
+        log!(
+            "reset level: {}, num_zombies = {}, speed: {}",
+            self.level,
+            self.num_zombies,
+            self.speed
+        );
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
@@ -135,15 +157,15 @@ fn hit_zombie(p: &Poo, z: &Zombie) -> bool {
     }
 }
 
-fn move_zombie(z: &mut Zombie, h: &Herpooles) {
+// pass zombie speed from the controller
+fn move_zombie(z: &mut Zombie, h: &Herpooles, zombie_speed: &f32) {
     // find vector z -> h
     let zp = geometry::Point { x: z.x, y: z.y };
     let hp = geometry::Point { x: h.x, y: h.y };
     let zh_vec = geometry::Vector::new(zp, hp);
 
     // apply A + d n
-    let zombie_speed = 0.5;
-    let mv_vec: geometry::Vector = zh_vec.unit_vec() * zombie_speed;
+    let mv_vec: geometry::Vector = zh_vec.unit_vec() * *zombie_speed;
     let pos: geometry::Point = zp + mv_vec;
     z.x = pos.x;
     z.y = pos.y;
@@ -194,20 +216,21 @@ pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
 pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
     h: &Rc<RefCell<Herpooles>>,
-    zombies: &mut Vec<Zombie>,
     pressed_keys: &Rc<Cell<PressedKeys>>,
     zombie_kill_sound: &web_sys::HtmlAudioElement,
+    controller: &mut Controller,
 ) {
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0); //TODO: parameterize this
 
     let mut h_ref = h.borrow_mut();
     let pressed_keys = pressed_keys.get();
+    let zombies = &mut controller.zombies;
 
     // move herpooles
     move_herpooles(&mut h_ref, &pressed_keys);
     // move zombies
     zombies.iter_mut().for_each(|z| {
-        move_zombie(z, &h_ref);
+        move_zombie(z, &h_ref, &controller.speed);
     });
 
     // An empty iterator returns false.
@@ -248,11 +271,5 @@ pub fn step(
     zombies.retain(|z| z.walking);
     if zombies.is_empty() {
         log!("no zombies");
-    }
-}
-
-pub fn set(zombies: &mut Vec<Zombie>) {
-    if zombies.len() < 10 {
-        zombies.push(Zombie::new());
     }
 }

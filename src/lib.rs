@@ -82,8 +82,6 @@ fn main() -> Result<(), JsValue> {
     let pressed_keys = Rc::new(Cell::new(pressed_keys));
     callbacks::add_key_events(&pressed_keys, &document); // pressed_keys rc not moved in here?
 
-    // actors
-    let mut zombies = vec![];
     // needs interior mutability because it may move (change coordinates) and also fire poo (push
     // poo in its vec). Also it probably needs to be thread safe.
     let herpooles = game::Herpooles::new();
@@ -96,18 +94,20 @@ fn main() -> Result<(), JsValue> {
     // moved in the main_loop_closure
     let closed_animation_id = animation_id.clone();
 
+    let mut controller = game::Controller::start();
+
     // main game loop
     // create two Rc -- one is moved in the closure
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
     let main_loop_closure = Closure::wrap(Box::new(move || {
-        game::set(&mut zombies);
+        controller.run();
         game::step(
             &ctx,
             &closed_herpooles,
-            &mut zombies,
             &pressed_keys,
             &audio_zombie_kill,
+            &mut controller, // refers to zombies, which are mutated
         );
 
         if closed_herpooles.borrow().is_alive() {
