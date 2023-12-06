@@ -166,7 +166,6 @@ fn move_zombie(z: &mut Zombie, h: &Herpooles, zombie_speed: &f32) {
     let zp = geometry::Point { x: z.x, y: z.y };
     let hp = geometry::Point { x: h.x, y: h.y };
     let zh_vec = geometry::Vector::new(zp, hp);
-
     // apply A + d n
     let mv_vec: geometry::Vector = zh_vec.unit_vec() * *zombie_speed;
     let pos: geometry::Point = zp + mv_vec;
@@ -215,14 +214,16 @@ pub fn move_herpooles(herpooles: &mut Herpooles, pressed_keys: &PressedKeys) {
     }
 }
 
-// h is a Rc clone
 pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
     h: &Rc<RefCell<Herpooles>>,
     pressed_keys: &Rc<Cell<PressedKeys>>,
     controller: &mut Controller,
 ) {
-    ctx.clear_rect(1.0, 1.0, 998.0, 798.0); //TODO: parameterize this
+    // TODO: make static
+    let height = ctx.canvas().expect("get canvas").height() as f64;
+    let width = ctx.canvas().expect("get canvas").width() as f64;
+    ctx.clear_rect(2.0, 2.0, width - 3.0, height - 3.0);
 
     let mut h_ref = h.borrow_mut();
     let pressed_keys = pressed_keys.get();

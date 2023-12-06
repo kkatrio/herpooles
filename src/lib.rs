@@ -51,17 +51,9 @@ fn main() -> Result<(), JsValue> {
         .unwrap();
 
     // canvas boarder
-    ctx.stroke_rect(
-        0.0,
-        0.0,
-        htmlcanvas.width().into(),
-        htmlcanvas.height().into(),
-    );
-    // TODO: use the hardcoded values, no need for this
-    //let eastwall: f32 = htmlcanvas.width() as f32;
-    //let westwall: f32 = 0.0;
-    //let southwall: f32 = htmlcanvas.height() as f32;
-    //let northwall: f32 = 0.0;
+    let width = htmlcanvas.width() as f64;
+    let height = htmlcanvas.height() as f64;
+    ctx.stroke_rect(1.0, 1.0, width - 1.0, height - 1.0);
 
     // keyboard events
     let pressed_keys = PressedKeys {
