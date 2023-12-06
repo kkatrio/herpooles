@@ -57,18 +57,11 @@ fn main() -> Result<(), JsValue> {
         htmlcanvas.width().into(),
         htmlcanvas.height().into(),
     );
-    // use the hardcoded values, no need for this
+    // TODO: use the hardcoded values, no need for this
     //let eastwall: f32 = htmlcanvas.width() as f32;
     //let westwall: f32 = 0.0;
     //let southwall: f32 = htmlcanvas.height() as f32;
     //let northwall: f32 = 0.0;
-
-    // game-over sound
-    let audio =
-        web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav").expect("Could not load wav");
-    // zombie kill
-    let audio_zombie_kill =
-        web_sys::HtmlAudioElement::new_with_src("zombie-die.wav").expect("Could not load wav");
 
     // keyboard events
     let pressed_keys = PressedKeys {
@@ -77,43 +70,42 @@ fn main() -> Result<(), JsValue> {
         up: false,
         down: false,
     };
-    // pressed_keys need shared ownership, but do they need interior mutability? the main loop does
-    // not set a value -- no clone here
     let pressed_keys = Rc::new(Cell::new(pressed_keys));
-    callbacks::add_key_events(&pressed_keys, &document); // pressed_keys rc not moved in here?
+    callbacks::add_key_events(&pressed_keys, &document);
 
-    // needs interior mutability because it may move (change coordinates) and also fire poo (push
-    // poo in its vec). Also it probably needs to be thread safe.
-    let herpooles = game::Herpooles::new();
-    let herpooles = Rc::new(RefCell::new(herpooles));
-    // moved in the main_loop_closure
-    let closed_herpooles = herpooles.clone();
+    let herpooles = Rc::new(RefCell::new(game::Herpooles::new()));
+    callbacks::add_shoot(&herpooles, &document);
+
+    // Not sure what is the value of keeping this in the heap,
+    // I just do not want the Controller to own the Zombies.
+    let zombies = Box::new((0..10).map(|_| game::Zombie::new()).collect());
+    let mut controller = game::Controller::new(zombies);
 
     // animation_id is used in the first frame request.
     let animation_id = Rc::new(Cell::new(0));
     // moved in the main_loop_closure
     let closed_animation_id = animation_id.clone();
 
-    let mut controller = game::Controller::start();
-
     // main game loop
     // create two Rc -- one is moved in the closure
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
     let main_loop_closure = Closure::wrap(Box::new(move || {
-        controller.run();
+        controller.check();
         game::step(
             &ctx,
-            &closed_herpooles,
+            // Need a reference because cannot move it out of its environment (closure is FnMut),
+            &herpooles,
             &pressed_keys,
-            &audio_zombie_kill,
-            &mut controller, // refers to zombies, which are mutated
+            &mut controller,
         );
 
-        if closed_herpooles.borrow().is_alive() {
+        if herpooles.borrow().is_alive() {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
             closed_animation_id.set(id);
         } else {
+            let audio = web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav")
+                .expect("Could not load wav");
             let _promise = audio.play().unwrap();
         }
     }) as Box<dyn FnMut()>);
@@ -122,14 +114,8 @@ fn main() -> Result<(), JsValue> {
     // request the first frame
     animation_id.set(request_animation_frame(f.borrow().as_ref().unwrap()));
 
-    // we want to call the main_loop closure from the play_pause closure, so we create another clone of the main_loop_closure Rc.
-    // Same for the animation_id.
-    let p = f.clone();
-    let pp_animation_id = animation_id.clone();
-    callbacks::add_play_pause_control(pp_animation_id, p, &document);
+    callbacks::add_play_pause_control(animation_id, f, &document);
     callbacks::add_restart_event(&document);
-    // fist herpooles Rc moved in here
-    callbacks::add_shoot(herpooles, &document);
 
     Ok(())
 }

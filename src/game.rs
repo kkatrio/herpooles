@@ -96,21 +96,24 @@ pub struct Controller {
     level: u16,
     num_zombies: u16,
     speed: f32,
-    zombies: Vec<Zombie>,
+    zombies: Box<Vec<Zombie>>,
+    zombie_kill_sound: web_sys::HtmlAudioElement,
 }
 
 impl Controller {
-    pub fn start() -> Self {
+    pub fn new(zombies: Box<Vec<Zombie>>) -> Self {
+        let audio_zombie_kill =
+            web_sys::HtmlAudioElement::new_with_src("zombie-die.wav").expect("Could not load wav");
         Self {
             level: 1,
             num_zombies: 10,
             speed: 0.5,
-            zombies: (0..10).map(|_| Zombie::new()).collect(),
+            zombies: zombies,
+            zombie_kill_sound: audio_zombie_kill,
         }
     }
 
-    // TODO: is the &mut reference ok here? maybe it should not be accessible in public.
-    pub fn run(&mut self) {
+    pub fn check(&mut self) {
         if self.zombies.len() == 0 {
             self.reset()
         }
@@ -217,7 +220,6 @@ pub fn step(
     ctx: &web_sys::CanvasRenderingContext2d,
     h: &Rc<RefCell<Herpooles>>,
     pressed_keys: &Rc<Cell<PressedKeys>>,
-    zombie_kill_sound: &web_sys::HtmlAudioElement,
     controller: &mut Controller,
 ) {
     ctx.clear_rect(1.0, 1.0, 998.0, 798.0); //TODO: parameterize this
@@ -258,7 +260,7 @@ pub fn step(
             if hit_zombie(&p, &z) {
                 p.must_clean = true;
                 z.walking = false;
-                let _promise = zombie_kill_sound.play().unwrap();
+                let _promise = controller.zombie_kill_sound.play().unwrap();
             }
         }
     }
