@@ -250,6 +250,9 @@ pub fn step(
     // move and draw poo
     h_ref.poo.iter_mut().for_each(|p| {
         move_poo(p);
+        if p.x < 2.0 || p.x > width as f32 - 3.0 || p.y < 2.0 || p.y > height as f32 - 3.0 {
+            p.must_clean = true;
+        }
         render::draw_poo(ctx, p);
     });
 
