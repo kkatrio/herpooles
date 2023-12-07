@@ -102,8 +102,8 @@ pub struct Controller {
 
 impl Controller {
     pub fn new(zombies: Box<Vec<Zombie>>) -> Self {
-        let audio_zombie_kill =
-            web_sys::HtmlAudioElement::new_with_src("zombie-die.wav").expect("Could not load wav");
+        let audio_zombie_kill = web_sys::HtmlAudioElement::new_with_src("resources/zombie-die.wav")
+            .expect("Could not load wav");
         Self {
             level: 1,
             num_zombies: 10,

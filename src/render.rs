@@ -239,7 +239,7 @@ pub fn draw_poo(ctx: &web_sys::CanvasRenderingContext2d, p: &Poo) {
         .unwrap()
         .dyn_into::<web_sys::HtmlImageElement>()
         .unwrap();
-    image_element.set_src("poop.png");
+    image_element.set_src("resources/poop.png");
     ctx.draw_image_with_html_image_element(&image_element, p.x.into(), p.y.into())
         .unwrap();
 }

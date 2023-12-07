@@ -96,7 +96,7 @@ fn main() -> Result<(), JsValue> {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
             closed_animation_id.set(id);
         } else {
-            let audio = web_sys::HtmlAudioElement::new_with_src("zombie-hit.wav")
+            let audio = web_sys::HtmlAudioElement::new_with_src("resources/zombie-hit.wav")
                 .expect("Could not load wav");
             let _promise = audio.play().unwrap();
         }
