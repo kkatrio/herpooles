@@ -38,7 +38,9 @@ pub fn cancel_animation_frame(handle: i32) {
 #[wasm_bindgen(start)]
 fn main() -> Result<(), JsValue> {
     set_panic_hook();
-    let document = window().document().unwrap();
+    let window = window();
+    // using the window here and then moving it into the main closure
+    let document = window.document().unwrap();
     let canvas = document.get_element_by_id("canvas").unwrap();
     let htmlcanvas = canvas
         .dyn_into::<web_sys::HtmlCanvasElement>()
@@ -49,6 +51,12 @@ fn main() -> Result<(), JsValue> {
         .unwrap()
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .unwrap();
+
+    // gets moved in the main closure
+    let score_element = document
+        .get_element_by_id("score")
+        .expect("should have #score on the page");
+    let score_element = Rc::new(score_element);
 
     // canvas boarder
     let width = htmlcanvas.width() as f64;
@@ -82,7 +90,7 @@ fn main() -> Result<(), JsValue> {
     // create two Rc -- one is moved in the closure
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
-    let main_loop_closure = Closure::wrap(Box::new(move || {
+    let main_loop_closure = Closure::new(move || {
         controller.check();
         game::step(
             &ctx,
@@ -92,6 +100,8 @@ fn main() -> Result<(), JsValue> {
             &mut controller,
         );
 
+        callbacks::update_score(&controller.score, &score_element, &window);
+
         if herpooles.borrow().is_alive() {
             let id = request_animation_frame(g.borrow().as_ref().unwrap());
             closed_animation_id.set(id);
@@ -100,7 +110,7 @@ fn main() -> Result<(), JsValue> {
                 .expect("Could not load wav");
             let _promise = audio.play().unwrap();
         }
-    }) as Box<dyn FnMut()>);
+    });
     // store the closure in the Rc
     *f.borrow_mut() = Some(main_loop_closure);
     // request the first frame
@@ -108,6 +118,5 @@ fn main() -> Result<(), JsValue> {
 
     callbacks::add_play_pause_control(animation_id, f, &document);
     callbacks::add_restart_event(&document);
-
     Ok(())
 }

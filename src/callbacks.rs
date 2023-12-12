@@ -129,3 +129,26 @@ pub fn add_shoot(herpooles: &Rc<RefCell<Herpooles>>, document: &web_sys::Documen
         .unwrap();
     shoot_closure.forget();
 }
+
+pub fn update_score(
+    current_score: &Rc<Cell<u32>>,
+    score_element: &Rc<web_sys::Element>, // using a Rc because I want to clone the Rc, not the
+    // inner Element
+    window: &web_sys::Window, // RefCell or Rc or Box ?
+) {
+    // pass a new clone into the closure
+    // we need to pass a reference to the function
+    // because the main loop that calls it is FnMut, so it cannot move it
+    // outside of its envoronment.
+    let current_score = current_score.clone();
+    let score_element = score_element.clone();
+    // the closure to update the html element
+    let a = Closure::<dyn FnMut()>::new(move || {
+        score_element.set_inner_html(&current_score.get().to_string());
+    });
+    // call the closure every 2 seconds
+    window
+        .set_interval_with_callback_and_timeout_and_arguments_0(a.as_ref().unchecked_ref(), 2000)
+        .unwrap();
+    a.forget();
+}

@@ -98,6 +98,8 @@ pub struct Controller {
     speed: f32,
     zombies: Box<Vec<Zombie>>,
     zombie_kill_sound: web_sys::HtmlAudioElement,
+    // Cell because it is mutated when counting the score.
+    pub score: Rc<Cell<u32>>,
 }
 
 impl Controller {
@@ -110,6 +112,7 @@ impl Controller {
             speed: 0.5,
             zombies: zombies,
             zombie_kill_sound: audio_zombie_kill,
+            score: Rc::new(Cell::new(0)),
         }
     }
 
@@ -258,13 +261,17 @@ pub fn step(
 
     // check collision and mark for cleaning
     // zombies is a &mut
-    // https://stackoverflow.com/questions/68936034/mutable-reference-to-a-vector-was-moved-due-to-this-implicit-call-to-into-iter
     for z in zombies.iter_mut() {
         for p in &mut h_ref.poo {
             if hit_zombie(&p, &z) {
                 p.must_clean = true;
                 z.walking = false;
                 let _promise = controller.zombie_kill_sound.play().unwrap();
+                // count score. Using a Cell because the inner value is only a number
+                let mut score = controller.score.get();
+                score += 1;
+                controller.score.set(score);
+                log!("score: {}", controller.score.get());
             }
         }
     }
