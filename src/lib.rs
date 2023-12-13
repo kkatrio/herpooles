@@ -76,9 +76,9 @@ fn main() -> Result<(), JsValue> {
     let herpooles = Rc::new(RefCell::new(game::Herpooles::new()));
     callbacks::add_shoot(&herpooles, &document);
 
-    // Not sure what is the value of keeping this in the heap,
-    // I just do not want the Controller to own the Zombies.
-    let zombies = Box::new((0..10).map(|_| game::Zombie::new()).collect());
+    // TODO: avoid hardcoded level 1, use the controller
+    let zombies = Box::new((0..10).map(|_| game::Zombie::new(1)).collect());
+    // TODO: avoid the controller owning the zombies
     let mut controller = game::Controller::new(zombies);
 
     // animation_id is used in the first frame request.

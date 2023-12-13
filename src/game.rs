@@ -1,6 +1,7 @@
 use crate::geometry;
 use crate::render;
 use crate::PressedKeys;
+use js_sys::Date;
 use rand;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -13,6 +14,7 @@ pub struct Herpooles {
     dead: bool,
     poo: Vec<Poo>,
     pub bearing: Direction, // for render
+    instant_fired: f64,
 }
 
 impl Herpooles {
@@ -23,12 +25,16 @@ impl Herpooles {
             dead: true,
             poo: vec![],
             bearing: Direction::North,
+            instant_fired: Date::now(),
         }
     }
 
     pub fn fire_poo(&mut self) {
-        // TODO: clean some poo from the vec
-        self.poo.push(Poo::new(&self.x, &self.y, self.bearing));
+        // limit firing poo
+        if Date::now() - self.instant_fired > 500.0 {
+            self.poo.push(Poo::new(&self.x, &self.y, self.bearing));
+            self.instant_fired = Date::now();
+        }
     }
 
     pub fn is_alive(&self) -> bool {
@@ -50,16 +56,24 @@ pub struct Zombie {
 }
 
 impl Zombie {
-    pub fn new() -> Zombie {
-        let xr = rand::random::<f32>();
-        //let yr = rand::random::<f32>();
+    pub fn new(level: u16) -> Zombie {
+        let xr = rand::random::<f32>() - 0.5;
+        let yr = rand::random::<f32>() - 0.5;
         let x_variance = 1000.0;
-        // let y_variance = 10.0;
-        let x_start = 0.0;
-        let y_start = 200.0;
+        let y_variance = 400.0;
+        let x_start = 500.0;
+        let y_start = if level > 1 {
+            if xr > 0.3 {
+                1000.0 // from south
+            } else {
+                -200.0 // from north
+            }
+        } else {
+            -200.0 // first couple of levels from north.
+        };
         Zombie {
             x: x_start + xr * x_variance,
-            y: y_start,
+            y: y_start + yr * y_variance,
             walking: true,
         }
     }
@@ -127,7 +141,7 @@ impl Controller {
         self.num_zombies = self.level * 10;
         self.speed = self.speed + 0.1;
         self.zombies
-            .resize_with(self.num_zombies.into(), || Zombie::new());
+            .resize_with(self.num_zombies.into(), || Zombie::new(self.level));
         log!(
             "reset level: {}, num_zombies = {}, speed: {}",
             self.level,
@@ -165,15 +179,19 @@ fn hit_zombie(p: &Poo, z: &Zombie) -> bool {
 
 // pass zombie speed from the controller
 fn move_zombie(z: &mut Zombie, h: &Herpooles, zombie_speed: &f32) {
-    // find vector z -> h
+    // apply A + d n.
+    // d is the speed, A the initial position, n the unit vector.
     let zp = geometry::Point { x: z.x, y: z.y };
     let hp = geometry::Point { x: h.x, y: h.y };
+    // vector z -> h
     let zh_vec = geometry::Vector::new(zp, hp);
-    // apply A + d n
     let mv_vec: geometry::Vector = zh_vec.unit_vec() * *zombie_speed;
     let pos: geometry::Point = zp + mv_vec;
-    z.x = pos.x;
-    z.y = pos.y;
+    // some disturbance in zombie steps
+    let xr = rand::random::<f32>() - 0.5;
+    let yr = rand::random::<f32>() - 0.5;
+    z.x = pos.x + xr;
+    z.y = pos.y + yr;
 }
 
 fn move_poo(p: &mut Poo) {
@@ -226,7 +244,7 @@ pub fn step(
     // TODO: make static
     let height = ctx.canvas().expect("get canvas").height() as f64;
     let width = ctx.canvas().expect("get canvas").width() as f64;
-    ctx.clear_rect(2.0, 2.0, width - 3.0, height - 3.0);
+    ctx.clear_rect(1.0, 1.0, width - 3.0, height - 2.0);
 
     let mut h_ref = h.borrow_mut();
     let pressed_keys = pressed_keys.get();
